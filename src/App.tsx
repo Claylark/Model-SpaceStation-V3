@@ -258,7 +258,7 @@ export default function App() {
             3. content-end：让卡片保持沉底 
         */}
         <div 
-          className={`absolute -inset-x-10 -inset-y-8 px-10 py-8 flex flex-wrap content-end ${stack.gap || 'gap-4'} overflow-y-auto hide-scrollbar`}
+          className={`absolute -inset-x-10 -inset-y-8 px-10 pt-8 flex flex-wrap content-end ${stack.gap || 'gap-4'} overflow-y-auto hide-scrollbar`}
           style={{ 
             WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 32px, black calc(100% - 32px), transparent 100%)',
             maskImage: 'linear-gradient(to bottom, transparent 0%, black 32px, black calc(100% - 32px), transparent 100%)'
