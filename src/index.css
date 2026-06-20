@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================
+   Global Styles - Clay SpaceStation V3
+   ========================================== */
+
+html, body {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f7fb;
+  color: #111827;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-text-size-adjust: 100%;
+}
+
+html.dark body {
+  background-color: #050505;
+  color: #ffffff;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.mask-image-top {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 100%);
+}
+
+/* ==========================================
+   Music Wave Animation
+   ========================================== */
+@keyframes musicWave {
+  0%, 100% {
+    height: 4px;
+  }
+  50% {
+    height: 14px;
+  }
+}
+
+.wave-bar {
+  animation: musicWave 1.2s ease-in-out infinite;
+}
+
+.wave-bar:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.wave-bar:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* ==========================================
+   Custom Animations
+   ========================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================
+   Selection Styling
+   ========================================== */
+::selection {
+  background-color: rgba(219, 234, 254, 0.8);
+  color: #1e3a5f;
+}
+
+.dark ::selection {
+  background-color: rgba(30, 58, 138, 0.5);
+}
+
+/* ==========================================
+   RTL Support
+   ========================================== */
+html[dir="rtl"] .snap-x {
+  direction: rtl;
+}
+
+/* 设置面板在 RTL 下从左边滑出，圆角在右边（远离屏幕边缘的一侧） */
+html[dir="rtl"] #settings-panel {
+  right: auto;
+  left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 32px;
+  border-bottom-right-radius: 32px;
+  border-left: none;
+  border-right-width: 1px;
+}
+
+html[dir="rtl"] #settings-panel.translate-x-full {
+  --tw-translate-x: -100%;
+}
+
+html[dir="rtl"] #settings-panel.translate-x-0 {
+  --tw-translate-x: 0;
+}
