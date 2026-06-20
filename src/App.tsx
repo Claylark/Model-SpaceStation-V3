@@ -250,8 +250,11 @@ export default function App() {
 
     return (
       <section id={stack.id} key={stack.id}
-        className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100vh-160px)] box-border`}>
-        <div className={`w-full h-full flex flex-wrap content-start p-4 ${stack.gap || 'gap-3'} overflow-y-auto hide-scrollbar rounded-[24px]`}>
+        // 外层 relative 作为定位基准，严格维持 372px/94vw 宽度
+        className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100vh-160px)] relative box-border`}>
+
+        {/* 内层使用 absolute -inset-4 向外扩张 16px 容纳阴影，再用 p-4 将内容挤回 372px。使用 content-end 强制卡片沉底 */}
+        <div className={`absolute -inset-4 p-4 flex flex-wrap content-end ${stack.gap || 'gap-3'} overflow-y-auto hide-scrollbar`}>
           {stack.cards.map((card) => renderCard(card))}
         </div>
       </section>
