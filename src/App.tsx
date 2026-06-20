@@ -252,11 +252,7 @@ export default function App() {
         // 外层锁定 372px，维持和底部控制栏完美对齐，加上 relative 作为基准
         className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100vh-160px)] relative box-border`}>
         
-        {/* 终极魔法：
-            1. -inset-y-8 & py-8：将容器上下扩张 32px，再把内容挤回原位
-            2. maskImage：给这多出来的 32px 加上透明渐变。卡片滚出时会像融入迷雾一样平滑消失，告别"一刀切"！
-            3. content-end：让卡片保持沉底 
-        */}
+        {/* 负边距外扩容纳阴影 + mask-image 顶部底部分散过渡 + 卡片沉底 */}
         <div 
           className={`absolute -inset-x-10 -inset-y-8 px-10 pt-8 flex flex-wrap content-end ${stack.gap || 'gap-4'} overflow-y-auto hide-scrollbar`}
           style={{ 
@@ -266,7 +262,7 @@ export default function App() {
         >
           {stack.cards.map((card) => renderCard(card))}
           
-          {/* 物理垫片：对抗浏览器吞没 padding-bottom 的恶性 bug，强制给底部卡片的超大阴影留出绝对渲染空间 */}
+          {/* 底部垫片：为卡片阴影提供渲染空间 */}
           <div className="w-full h-8 shrink-0 pointer-events-none"></div>
         </div>
       </section>
