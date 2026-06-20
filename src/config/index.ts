@@ -19,15 +19,15 @@ export const APP_CONFIG: AppConfig = {
       id: 'stack-hero',
       sectionId: 'hero',
       visible: true,
-      stackWidth: 'w-[380px]',
-      stackMaxWidth: 'max-w-[380px]',
+      stackWidth: 'w-[412px]',
+      stackMaxWidth: 'max-w-[412px]',
       gap: 'gap-3',
       cards: [
         {
           id: 'card-hero-1',
           sectionId: 'hero',
           visible: true,
-          layout: { width: 'w-full', height: 'h-auto' },
+          layout: { width: 'w-[380px]', height: 'h-auto' },
           visual: { glassMode: 'default', font: 'font-sans' },
           body: {
             component: 'PlaceholderCard',
@@ -44,15 +44,15 @@ export const APP_CONFIG: AppConfig = {
       id: 'stack-profile-a',
       sectionId: 'profile',
       visible: true,
-      stackWidth: 'w-[380px]',
-      stackMaxWidth: 'max-w-[380px]',
+      stackWidth: 'w-[412px]',
+      stackMaxWidth: 'max-w-[412px]',
       gap: 'gap-3',
       cards: [
         {
           id: 'card-profile-a-1',
           sectionId: 'profile',
           visible: true,
-          layout: { width: 'w-full', height: 'h-auto' },
+          layout: { width: 'w-[380px]', height: 'h-auto' },
           visual: { glassMode: 'default', font: 'font-sans' },
           body: {
             component: 'PlaceholderCard',
@@ -69,15 +69,15 @@ export const APP_CONFIG: AppConfig = {
       id: 'stack-profile-b',
       sectionId: 'profile',
       visible: true,
-      stackWidth: 'w-[380px]',
-      stackMaxWidth: 'max-w-[380px]',
+      stackWidth: 'w-[412px]',
+      stackMaxWidth: 'max-w-[412px]',
       gap: 'gap-3',
       cards: [
         {
           id: 'card-profile-b-1',
           sectionId: 'profile',
           visible: true,
-          layout: { width: 'w-full', height: 'h-auto' },
+          layout: { width: 'w-[380px]', height: 'h-auto' },
           visual: { glassMode: 'default', font: 'font-sans' },
           body: {
             component: 'PlaceholderCard',
@@ -94,15 +94,15 @@ export const APP_CONFIG: AppConfig = {
       id: 'stack-attributes',
       sectionId: 'attributes',
       visible: true,
-      stackWidth: 'w-[380px]',
-      stackMaxWidth: 'max-w-[380px]',
+      stackWidth: 'w-[412px]',
+      stackMaxWidth: 'max-w-[412px]',
       gap: 'gap-3',
       cards: [
         {
           id: 'card-attributes-1',
           sectionId: 'attributes',
           visible: true,
-          layout: { width: 'w-full', height: 'h-auto' },
+          layout: { width: 'w-[380px]', height: 'h-auto' },
           visual: { glassMode: 'default', font: 'font-sans' },
           body: {
             component: 'PlaceholderCard',
@@ -119,15 +119,15 @@ export const APP_CONFIG: AppConfig = {
       id: 'stack-network',
       sectionId: 'network',
       visible: true,
-      stackWidth: 'w-[380px]',
-      stackMaxWidth: 'max-w-[380px]',
+      stackWidth: 'w-[412px]',
+      stackMaxWidth: 'max-w-[412px]',
       gap: 'gap-3',
       cards: [
         {
           id: 'card-network-1',
           sectionId: 'network',
           visible: true,
-          layout: { width: 'w-full', height: 'h-auto' },
+          layout: { width: 'w-[380px]', height: 'h-auto' },
           visual: { glassMode: 'default', font: 'font-sans' },
           body: {
             component: 'PlaceholderCard',
@@ -144,15 +144,15 @@ export const APP_CONFIG: AppConfig = {
       id: 'stack-history',
       sectionId: 'history',
       visible: true,
-      stackWidth: 'w-[380px]',
-      stackMaxWidth: 'max-w-[380px]',
+      stackWidth: 'w-[412px]',
+      stackMaxWidth: 'max-w-[412px]',
       gap: 'gap-3',
       cards: [
         {
           id: 'card-history-1',
           sectionId: 'history',
           visible: true,
-          layout: { width: 'w-full', height: 'h-auto' },
+          layout: { width: 'w-[380px]', height: 'h-auto' },
           visual: { glassMode: 'default', font: 'font-sans' },
           body: {
             component: 'PlaceholderCard',

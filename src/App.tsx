@@ -251,7 +251,7 @@ export default function App() {
     return (
       <section id={stack.id} key={stack.id}
         className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100vh-160px)] box-border`}>
-        <div className={`w-full h-full flex flex-wrap content-start ${stack.gap || 'gap-3'} overflow-y-auto hide-scrollbar rounded-[24px]`}>
+        <div className={`w-full h-full flex flex-wrap content-start p-4 ${stack.gap || 'gap-3'} overflow-y-auto hide-scrollbar rounded-[24px]`}>
           {stack.cards.map((card) => renderCard(card))}
         </div>
       </section>
