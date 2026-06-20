@@ -22,10 +22,15 @@ const locales: Record<LocaleCode, LocaleStrings> = {
 
 let currentLocale: LocaleCode = 'zh-CN';
 
-export function setLocale(locale: LocaleCode): void {
-  currentLocale = locale;
+/** 设置文档级语言与 RTL 方向（不含 currentLocale 状态） */
+export function setDocumentLocale(locale: LocaleCode): void {
   document.documentElement.lang = locale;
   document.documentElement.dir = getDir(locale);
+}
+
+export function setLocale(locale: LocaleCode): void {
+  currentLocale = locale;
+  setDocumentLocale(locale);
 }
 
 export function getLocale(): LocaleCode {

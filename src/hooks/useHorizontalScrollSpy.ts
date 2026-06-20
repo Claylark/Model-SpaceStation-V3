@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
-import type { CardConfig } from '../types/config';
+import { useState, useEffect, useMemo } from 'react';
+import type { CardStackConfig } from '../types/config';
 
-export function useHorizontalScrollSpy(cards: CardConfig[], containerId: string) {
-  const [activeSectionId, setActiveSectionId] = useState(cards[0]?.sectionId || '');
+/**
+ * 横向滚动监听：检测当前视口在哪个卡片堆
+ * 返回该堆的 sectionId（用于底部导航高亮）和堆索引（用于惰性渲染）
+ */
+export function useHorizontalScrollSpy(stacks: CardStackConfig[], containerId: string) {
+  const [activeSectionId, setActiveSectionId] = useState(stacks[0]?.sectionId || '');
 
   useEffect(() => {
     const container = document.getElementById(containerId);
@@ -14,20 +18,20 @@ export function useHorizontalScrollSpy(cards: CardConfig[], containerId: string)
       if (timeoutId) return;
       timeoutId = setTimeout(() => {
         const scrollCenter = container.scrollLeft + container.clientWidth / 2;
-        let closestCard = cards[0];
+        let closestStack = stacks[0];
         let minDistance = Infinity;
 
-        for (const card of cards) {
-          const el = document.getElementById(card.id);
+        for (const stack of stacks) {
+          const el = document.getElementById(stack.id);
           if (el) {
             const distance = Math.abs(scrollCenter - (el.offsetLeft + el.clientWidth / 2));
             if (distance < minDistance) {
               minDistance = distance;
-              closestCard = card;
+              closestStack = stack;
             }
           }
         }
-        setActiveSectionId(closestCard?.sectionId || '');
+        setActiveSectionId(closestStack?.sectionId || '');
         timeoutId = null;
       }, 50);
     };
@@ -39,7 +43,13 @@ export function useHorizontalScrollSpy(cards: CardConfig[], containerId: string)
       container.removeEventListener('scroll', handleScroll);
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [cards, containerId]);
+  }, [stacks, containerId]);
 
-  return activeSectionId;
+  /** 当前激活的堆在 stacks 数组中的索引（用于惰性渲染范围计算） */
+  const activeStackIndex = useMemo(
+    () => stacks.findIndex(s => s.sectionId === activeSectionId),
+    [stacks, activeSectionId],
+  );
+
+  return { activeSectionId, activeStackIndex };
 }

@@ -51,6 +51,20 @@ export interface CardConfig {
   themeOverrides?: Record<string, DeepPartial<CardConfig>>;
 }
 
+// ---- 卡片堆相关 ----
+
+/** 卡片堆配置：类似 iOS 负一屏小组件的自由流式布局容器 */
+export interface CardStackConfig {
+  id: string;              // 堆 DOM id
+  sectionId: string;       // 绑定 Section，导航通过此 ID 定位
+  visible: boolean;
+  stackWidth: string;      // 堆宽度，如 "w-[380px]"
+  stackMaxWidth?: string;  // 最大宽度，如 "max-w-[380px]"（≤6.67英寸手机屏 375dp）
+  gap?: string;            // 卡片间距 "gap-3"
+  cards: CardConfig[];     // 堆内卡片列表
+  themeOverrides?: Record<string, DeepPartial<CardStackConfig>>;
+}
+
 // ---- 主题相关 ----
 
 /** 壁纸配置 */
@@ -146,7 +160,7 @@ export interface AppConfig {
   meta: AppMeta;
   themeSystem: ThemeSystem;
   sections: Section[];
-  cards: CardConfig[];
+  stacks: CardStackConfig[];
 }
 
 // ---- 工具类型 ----

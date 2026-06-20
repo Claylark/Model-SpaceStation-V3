@@ -6,7 +6,7 @@
  * - 渲染背景层（主题壁纸/自定义背景）
  * - 渲染 Header（顶栏+设置面板）、AIChatModule（AI 对话）、
  *   BottomFloatingPill（底栏导航+音乐播放器）
- * - 横向滚动卡片容器（配置驱动的卡片渲染）
+ * - 横向滚动卡片堆容器（卡片堆内部 flex-wrap 自由排列卡片）
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { APP_CONFIG, themePresets } from './config/index';
@@ -24,7 +24,7 @@ import PlaceholderCard from './registry/components/PlaceholderCard';
 import Header from './components/Header';
 import AIChatModule from './components/AIChatModule';
 import BottomFloatingPill from './components/BottomFloatingPill';
-import type { CardConfig } from './types/config';
+import type { CardConfig, CardStackConfig } from './types/config';
 
 // ==========================================
 // 🚫 DO NOT DELETE - 液态玻璃常量（三层兜底）
@@ -123,9 +123,10 @@ export default function App() {
     switch (action.type) {
       case 'NAVIGATE':
       case 'NAVIGATE_SECTION': {
-        const firstCard = APP_CONFIG.cards.find(c => c.sectionId === action.payload);
-        if (firstCard) {
-          const el = document.getElementById(firstCard.id);
+        // 查找第一个匹配 sectionId 的堆
+        const firstStack = APP_CONFIG.stacks.find(s => s.sectionId === action.payload);
+        if (firstStack) {
+          const el = document.getElementById(firstStack.id);
           const container = document.getElementById('main-scroll-container');
           if (el && container) {
             container.style.scrollSnapType = 'none';
@@ -139,7 +140,7 @@ export default function App() {
     }
   }, []);
 
-  /** 滚轮横向滚动 */
+  /** 滚轮横向滚动（在卡片堆之间切换） */
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
     if (scrollLockRef.current) return;
@@ -149,8 +150,8 @@ export default function App() {
     let currentIndex = 0;
     let minDistance = Infinity;
 
-    APP_CONFIG.cards.forEach((card, index) => {
-      const el = document.getElementById(card.id);
+    APP_CONFIG.stacks.forEach((stack, index) => {
+      const el = document.getElementById(stack.id);
       if (el) {
         const distance = Math.abs(scrollCenter - (el.offsetLeft + el.clientWidth / 2));
         if (distance < minDistance) { minDistance = distance; currentIndex = index; }
@@ -158,12 +159,12 @@ export default function App() {
     });
 
     let nextIndex = currentIndex;
-    if (e.deltaY > 15) nextIndex = Math.min(currentIndex + 1, APP_CONFIG.cards.length - 1);
+    if (e.deltaY > 15) nextIndex = Math.min(currentIndex + 1, APP_CONFIG.stacks.length - 1);
     else if (e.deltaY < -15) nextIndex = Math.max(currentIndex - 1, 0);
 
     if (nextIndex !== currentIndex) {
       scrollLockRef.current = true;
-      const el = document.getElementById(APP_CONFIG.cards[nextIndex].id);
+      const el = document.getElementById(APP_CONFIG.stacks[nextIndex].id);
       if (el) {
         const targetLeft = el.offsetLeft - (container.clientWidth / 2) + (el.clientWidth / 2);
         container.scrollTo({ left: targetLeft, behavior: 'smooth' });
@@ -172,7 +173,7 @@ export default function App() {
     }
   }, []);
 
-  const activeSectionId = useHorizontalScrollSpy(APP_CONFIG.cards, 'main-scroll-container');
+  const { activeSectionId, activeStackIndex } = useHorizontalScrollSpy(APP_CONFIG.stacks, 'main-scroll-container');
 
   /** 解析卡片配置（base + theme override） */
   const resolveCardConfig = useCallback((baseCard: CardConfig, themeId: string): CardConfig => {
@@ -180,15 +181,15 @@ export default function App() {
     return mergeCardConfig(baseCard, baseCard.themeOverrides[themeId]);
   }, []);
 
-  /** 渲染单张卡片 */
+  /** 渲染单张卡片（堆内使用） */
   const renderCard = useCallback((rawCard: CardConfig) => {
     const card = resolveCardConfig(rawCard, currentThemeId);
 
     if (!card.visible) {
       return (
-        <section id={card.id} key={card.id}
-          className={`snap-center shrink-0 ${card.layout.width} ${card.layout.height} opacity-0 pointer-events-none select-none box-border`}>
-        </section>
+        <div key={card.id}
+          className={`${card.layout.width} ${card.layout.height} opacity-0 pointer-events-none select-none`}>
+        </div>
       );
     }
 
@@ -216,16 +217,46 @@ export default function App() {
     const componentName = card.body.component;
 
     return (
-      <section id={card.id} key={card.id}
-        className={`snap-center shrink-0 ${card.layout.width} ${card.layout.height} relative box-border`}>
+      <div key={card.id}
+        className={`${card.layout.width} ${card.layout.height} relative box-border`}>
         <div className={`w-full h-full rounded-[32px] flex flex-col relative overflow-hidden transition-all duration-300 ${finalBgStyle} ${card.visual.font || 'font-sans'}`}>
           {componentName === 'RichTextIntro' && <RichTextIntro props={card.body.props} actions={card.actions} dispatch={dispatchAction} />}
           {componentName === 'ElasticSpace' && <ElasticSpace props={card.body.props} />}
           {componentName === 'PlaceholderCard' && <PlaceholderCard props={card.body.props} />}
         </div>
+      </div>
+    );
+  }, [currentThemeId, isGlassUI, resolveCardConfig, dispatchAction]);
+
+  /**
+   * 渲染堆占位符：保留 DOM 节点（id + 尺寸）用于 snap 定位，
+   * 但不渲染内部卡片内容（惰性渲染优化）
+   */
+  const renderStackPlaceholder = useCallback((stack: CardStackConfig) => (
+    <section id={stack.id} key={stack.id}
+      className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100vh-160px)] box-border`}>
+    </section>
+  ), []);
+
+  /** 渲染单个卡片堆（完整内容） */
+  const renderStack = useCallback((stack: CardStackConfig) => {
+    if (!stack.visible) {
+      return (
+        <section id={stack.id} key={stack.id}
+          className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100vh-160px)] opacity-0 pointer-events-none select-none box-border`}>
+        </section>
+      );
+    }
+
+    return (
+      <section id={stack.id} key={stack.id}
+        className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100vh-160px)] box-border`}>
+        <div className={`w-full h-full flex flex-wrap content-start ${stack.gap || 'gap-3'} overflow-y-auto hide-scrollbar rounded-[24px]`}>
+          {stack.cards.map((card) => renderCard(card))}
+        </div>
       </section>
     );
-  }, [currentThemeId, isGlassUI, resolveCardConfig]);
+  }, [renderCard]);
 
   const presetStyle = themePresets[currentThemeId]?.style || '';
 
@@ -272,17 +303,20 @@ export default function App() {
         sendMessage={sendMessage} locale={locale}
       />
 
-      {/* ---------- 卡片横向滚动区 ---------- */}
+      {/* ---------- 卡片堆横向滚动区 ---------- */}
       <main id="main-scroll-container" onWheel={handleWheel}
         className={`fixed top-0 bottom-0 left-0 w-full flex flex-row items-end overflow-x-auto snap-x snap-mandatory scroll-smooth hide-scrollbar mask-image-top pb-[112px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isChatOpen ? 'opacity-0 -z-10 scale-95 blur-md pointer-events-none' : 'opacity-100 z-40 scale-100 blur-0 pointer-events-auto'}`}>
-        <div className="shrink-0" style={{ width: 'calc(50vw - min(186px, 47vw))' }}></div>
-        {APP_CONFIG.cards.map((card, idx) => (
-          <div key={card.id} className="contents">
-            {renderCard(card)}
-            {idx < APP_CONFIG.cards.length - 1 && <div className="shrink-0 w-5"></div>}
-          </div>
-        ))}
-        <div className="shrink-0" style={{ width: 'calc(50vw - min(186px, 47vw))' }}></div>
+        <div className="shrink-0" style={{ width: 'calc(50vw - min(190px, 47vw))' }}></div>
+        {APP_CONFIG.stacks.map((stack, idx) => {
+          const isInViewport = Math.abs(idx - activeStackIndex) <= 2;
+          return (
+            <div key={stack.id} className="contents">
+              {isInViewport ? renderStack(stack) : renderStackPlaceholder(stack)}
+              {idx < APP_CONFIG.stacks.length - 1 && <div className="shrink-0 w-5"></div>}
+            </div>
+          );
+        })}
+        <div className="shrink-0" style={{ width: 'calc(50vw - min(190px, 47vw))' }}></div>
       </main>
 
       {/* ---------- 底栏导航+音乐播放器 ---------- */}
