@@ -238,7 +238,6 @@ export default function App() {
     </section>
   ), []);
 
-  /** 渲染单个卡片堆（完整内容） */
   const renderStack = useCallback((stack: CardStackConfig) => {
     if (!stack.visible) {
       return (
@@ -250,12 +249,25 @@ export default function App() {
 
     return (
       <section id={stack.id} key={stack.id}
-        // 外层 relative 作为定位基准，严格维持 372px/94vw 宽度
+        // 外层锁定 372px，维持和底部控制栏完美对齐，加上 relative 作为基准
         className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100vh-160px)] relative box-border`}>
-
-        {/* 内层使用 absolute -inset-4 向外扩张 16px 容纳阴影，再用 p-4 将内容挤回 372px。使用 content-end 强制卡片沉底 */}
-        <div className={`absolute -inset-4 p-4 flex flex-wrap content-end ${stack.gap || 'gap-3'} overflow-y-auto hide-scrollbar`}>
+        
+        {/* 终极魔法：
+            1. -inset-y-8 & py-8：将容器上下扩张 32px，再把内容挤回原位
+            2. maskImage：给这多出来的 32px 加上透明渐变。卡片滚出时会像融入迷雾一样平滑消失，告别"一刀切"！
+            3. content-end：让卡片保持沉底 
+        */}
+        <div 
+          className={`absolute -inset-x-10 -inset-y-8 px-10 py-8 flex flex-wrap content-end ${stack.gap || 'gap-4'} overflow-y-auto hide-scrollbar`}
+          style={{ 
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 32px, black calc(100% - 32px), transparent 100%)',
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 32px, black calc(100% - 32px), transparent 100%)'
+          }}
+        >
           {stack.cards.map((card) => renderCard(card))}
+          
+          {/* 物理垫片：对抗浏览器吞没 padding-bottom 的恶性 bug，强制给底部卡片的超大阴影留出绝对渲染空间 */}
+          <div className="w-full h-8 shrink-0 pointer-events-none"></div>
         </div>
       </section>
     );
