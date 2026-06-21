@@ -63,7 +63,7 @@ export default function Header({
       <header className={`fixed top-0 left-0 w-full px-5 h-[68px] flex justify-between items-center backdrop-blur-xl border-b z-50 transition-colors duration-300 ${isGlassUI ? themePresets[currentThemeId]?.ui?.header || '' : 'bg-white/40 dark:bg-[#0a0a0a]/40 border-gray-200/50 dark:border-white/5'} ${isBgDark ? 'text-white' : 'text-gray-800'}`}>
         <div className="flex-shrink-0">
           <span dir="ltr" className="text-[18px] tracking-tight flex items-center select-none drop-shadow-sm">
-            <span className="font-normal">Claylark</span><sup className="text-[8px] font-normal text-gray-400 dark:text-gray-500 ml-0.5">™</sup><span className="font-semibold ml-1.5">SpaceStation</span><span className="ml-2 text-[10px] font-bold bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30">3.0</span>
+            <span className="font-normal">Claylark™</span><span className="font-semibold ml-1.5">SpaceStation</span><span className="ml-2 text-[10px] font-bold bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30">3.0</span>
           </span>
         </div>
 
