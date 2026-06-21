@@ -60,7 +60,6 @@ export default function Header({
 
   return (
     <>
-      {/* ---------- 顶栏 ---------- */}
       <header className={`fixed top-0 left-0 w-full px-5 h-[68px] flex justify-between items-center backdrop-blur-xl border-b z-50 transition-colors duration-300 ${isGlassUI ? themePresets[currentThemeId]?.ui?.header || '' : 'bg-white/40 dark:bg-[#0a0a0a]/40 border-gray-200/50 dark:border-white/5'} ${isBgDark ? 'text-white' : 'text-gray-800'}`}>
         <div className="flex-shrink-0">
           <span dir="ltr" className="text-[18px] tracking-tight flex items-center select-none drop-shadow-sm">
@@ -69,21 +68,17 @@ export default function Header({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* 暗黑模式开关 */}
           <button onClick={toggleDarkMode} title={isDark ? '浅色模式' : '深色模式'} className={`w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-sm border ${isBgDark ? 'bg-[#1a1a1a]/80 text-white border-[#333]' : 'bg-white/80 text-gray-700 border-gray-200/50'}`}>
             <Icon name={isDark ? "light_mode" : "dark_mode"} className="text-[18px]" />
           </button>
-          {/* 设置 */}
           <button onClick={() => setIsSettingsOpen(true)} title={t.settings.title} className={`w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-sm border ${isBgDark ? 'bg-[#1a1a1a]/80 text-white border-[#333]' : 'bg-white/80 text-gray-700 border-gray-200/50'}`}>
             <Icon name="settings" className="text-[18px]" />
           </button>
         </div>
       </header>
 
-      {/* 设置面板遮罩 */}
       {isSettingsOpen && <div className="fixed inset-0 z-[60] bg-transparent" onClick={() => setIsSettingsOpen(false)}></div>}
 
-      {/* ---------- 设置面板 ---------- */}
       <div id="settings-panel" className={`fixed top-0 right-0 bottom-0 w-[280px] max-w-[85vw] z-[70] flex flex-col transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-l-[32px]
         ${isSettingsOpen ? 'translate-x-0' : 'translate-x-full'}
         ${isGlassUI
@@ -91,7 +86,6 @@ export default function Header({
           : (isBgDark ? 'bg-[#121212] border-l border-[#2a2a2a] shadow-[-10px_0_30px_rgba(0,0,0,0.5)]' : 'bg-white border-l border-gray-200 shadow-[-10px_0_30px_rgba(0,0,0,0.05)]')
         }`}>
 
-        {/* 设置标题行 */}
         <div className={`flex justify-between items-center px-5 h-[68px] shrink-0 border-b ${isBgDark ? 'border-white/[0.1]' : 'border-black/[0.08]'}`}>
           <span className={`font-bold flex items-center gap-2 drop-shadow-sm ${isBgDark ? 'text-white' : 'text-gray-900'}`}>
             <Icon name="tune" className="text-[18px]" /> {t.settings.title}
@@ -102,7 +96,6 @@ export default function Header({
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 flex flex-col hide-scrollbar relative z-10">
-          {/* ---- 语言选择 ---- */}
           <div className="mb-6 flex flex-col relative z-[60]">
             <h3 className={`text-[11px] font-bold mb-3 uppercase tracking-widest flex items-center gap-1.5 opacity-80 pl-0.5 ${isBgDark ? 'text-white' : 'text-gray-900'}`}><Icon name="language" className="text-[14px]" /> {t.settings.language}</h3>
             <div className="w-full">
@@ -120,7 +113,6 @@ export default function Header({
             </div>
           </div>
 
-          {/* ---- 主题选择 ---- */}
           <div className="mb-6 flex flex-col">
             <h3 className={`text-[11px] font-bold mb-3 uppercase tracking-widest flex items-center gap-1.5 opacity-80 pl-0.5 ${isBgDark ? 'text-white' : 'text-gray-900'}`}><Icon name="palette" className="text-[14px]" /> {t.settings.theme}</h3>
             <div className="grid grid-cols-2 gap-3 p-1">
@@ -143,7 +135,6 @@ export default function Header({
             </div>
           </div>
 
-          {/* ---- 玻璃开关 ---- */}
           <div className="mb-5">
             <div className={`flex items-center justify-between pl-5 pr-4 h-11 rounded-full border shadow-sm ${isBgDark ? 'bg-white/5 border-white/5 text-white' : 'bg-black/5 border-transparent text-gray-900'}`}>
               <span className="text-[12px] font-bold flex items-center gap-1.5 select-none opacity-90"><Icon name="blur_on" className="text-[16px] text-blue-500" /> {t.settings.forceGlass}</span>
@@ -153,7 +144,6 @@ export default function Header({
             </div>
           </div>
 
-          {/* ---- 自定义背景 ---- */}
           <div className="mb-6 flex flex-col relative z-20">
             <h3 className={`text-[11px] font-bold mb-2.5 uppercase tracking-widest flex items-center gap-1.5 opacity-80 pl-0.5 ${isBgDark ? 'text-white' : 'text-gray-900'}`}><Icon name="dashboard_customize" className="text-[14px]" /> {t.settings.customBg}</h3>
             <div className={`flex items-center justify-between pl-5 pr-4 h-11 rounded-full border shadow-sm mb-3 ${isBgDark ? 'bg-white/5 border-white/5 text-white' : 'bg-black/5 border-transparent text-gray-900'}`}>
@@ -170,7 +160,6 @@ export default function Header({
             </label>
           </div>
 
-          {/* ---- 底部备案 ---- */}
           <div className={`mt-auto pt-4 border-t flex flex-col gap-2 text-[11px] font-medium relative z-[50] ${isBgDark ? 'border-white/[0.1] text-gray-400' : 'border-black/[0.08] text-gray-500'}`}>
             <div className="font-bold tracking-wide flex items-center justify-between"><span>{t.settings.footer}</span></div>
             <a href="https://github.com/Claylark/Clay-SpaceStation/blob/main/License.md" target="_blank" title={t.settings.license} className="text-blue-500 dark:text-blue-400 hover:underline flex items-center gap-1.5 py-0.5 text-[10.5px]"><Icon name="description" className="text-[14px]" /> {t.settings.license}</a>

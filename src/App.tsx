@@ -1,13 +1,3 @@
-/**
- * App.tsx - 星壤空间站 V3 主应用入口
- *
- * 职责：
- * - 初始化主题、语言、播放列表、ChatBot 等核心状态
- * - 渲染背景层（主题壁纸/自定义背景）
- * - 渲染 Header（顶栏+设置面板）、AIChatModule（AI 对话）、
- *   BottomFloatingPill（底栏导航+音乐播放器）
- * - 横向滚动卡片堆容器（卡片堆内部 flex-wrap 自由排列卡片）
- */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { APP_CONFIG, themePresets } from './config/index';
 import { mergeCardConfig } from './config/merge';
@@ -26,9 +16,6 @@ import AIChatModule from './components/AIChatModule';
 import BottomFloatingPill from './components/BottomFloatingPill';
 import type { CardConfig, CardStackConfig } from './types/config';
 
-// ==========================================
-// 🚫 DO NOT DELETE - 液态玻璃常量（三层兜底）
-// ==========================================
 const THEME_DRIVEN_GLASS = (ui: { cardDefault: string }) =>
   `${ui.cardDefault} backdrop-blur-3xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)]`;
 const ABSOLUTE_FALLBACK_GLASS =
@@ -46,10 +33,8 @@ export default function App() {
     isBgDark, setIsBgDark, toggleDarkMode,
   } = useTheme();
 
-  /** 当前语言状态（react state，切换会触发子组件重渲染） */
   const [locale, setLocale] = useState<LocaleCode>(routeLocale);
 
-  /** 切换语言时同时更新全局 i18n（html lang/dir）和本地 state */
   const handleLocaleChange = useCallback((newLocale: LocaleCode) => {
     setLocale(newLocale);
     applyLocale(newLocale);
@@ -62,7 +47,6 @@ export default function App() {
 
   const scrollLockRef = useRef(false);
 
-  // 路由主题优先级
   useEffect(() => {
     if (routeTheme && routeTheme !== currentThemeId) {
       setCurrentThemeId(routeTheme);
@@ -71,7 +55,6 @@ export default function App() {
     }
   }, [routeTheme]);
 
-  // 路由语言同步到本地 state
   useEffect(() => {
     if (routeLocale) {
       setLocale(routeLocale);
@@ -79,7 +62,6 @@ export default function App() {
     }
   }, [routeLocale]);
 
-  // dark mode 初始化
   useEffect(() => {
     const saved = localStorage.getItem('theme');
     if (saved === 'dark') {
@@ -88,7 +70,6 @@ export default function App() {
     }
   }, []);
 
-  // 背景亮度检测
   const handleBgLuminanceCheck = useCallback(() => {
     setTimeout(() => {
       if (!useCustomBg) {
@@ -111,19 +92,17 @@ export default function App() {
           ctx.drawImage(bgNode, w * 0.7, 0, w * 0.3, h, 0, 0, 1, 1);
           const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
           setIsBgDark((0.2126 * r + 0.7152 * g + 0.0722 * b) < 145);
-        } catch { /* ignore */ }
+        } catch { }
       }
     }, 500);
   }, [isDark, useCustomBg, customBgUrl, currentThemeId]);
 
   useEffect(() => { handleBgLuminanceCheck(); }, [handleBgLuminanceCheck]);
 
-  /** 导航/动作分发 */
   const dispatchAction = useCallback((action: { type: string; payload: string }) => {
     switch (action.type) {
       case 'NAVIGATE':
       case 'NAVIGATE_SECTION': {
-        // 查找第一个匹配 sectionId 的堆
         const firstStack = APP_CONFIG.stacks.find(s => s.sectionId === action.payload);
         if (firstStack) {
           const el = document.getElementById(firstStack.id);
@@ -140,7 +119,6 @@ export default function App() {
     }
   }, []);
 
-  /** 滚轮横向滚动（在卡片堆之间切换） */
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
     if (scrollLockRef.current) return;
@@ -175,13 +153,11 @@ export default function App() {
 
   const { activeSectionId, activeStackIndex } = useHorizontalScrollSpy(APP_CONFIG.stacks, 'main-scroll-container');
 
-  /** 解析卡片配置（base + theme override） */
   const resolveCardConfig = useCallback((baseCard: CardConfig, themeId: string): CardConfig => {
     if (!baseCard.themeOverrides || !baseCard.themeOverrides[themeId]) return baseCard;
     return mergeCardConfig(baseCard, baseCard.themeOverrides[themeId]);
   }, []);
 
-  /** 渲染单张卡片（堆内使用） */
   const renderCard = useCallback((rawCard: CardConfig) => {
     const card = resolveCardConfig(rawCard, currentThemeId);
 
@@ -219,7 +195,7 @@ export default function App() {
     return (
       <div key={card.id}
         className={`${card.layout.width} ${card.layout.height} relative box-border`}>
-        <div className={`w-full h-full rounded-[32px] flex flex-col relative overflow-hidden transition-all duration-300 ${finalBgStyle} ${card.visual.font || 'font-sans'}`}>
+        <div className={`w-full h-full rounded-[32px] flex flex-col relative overflow-hidden transition-all duration-300 transform-gpu ${finalBgStyle} ${card.visual.font || 'font-sans'}`}>
           {componentName === 'RichTextIntro' && <RichTextIntro props={card.body.props} actions={card.actions} dispatch={dispatchAction} />}
           {componentName === 'ElasticSpace' && <ElasticSpace props={card.body.props} />}
           {componentName === 'PlaceholderCard' && <PlaceholderCard props={card.body.props} />}
@@ -228,13 +204,9 @@ export default function App() {
     );
   }, [currentThemeId, isGlassUI, resolveCardConfig, dispatchAction]);
 
-  /**
-   * 渲染堆占位符：保留 DOM 节点（id + 尺寸）用于 snap 定位，
-   * 但不渲染内部卡片内容（惰性渲染优化）
-   */
   const renderStackPlaceholder = useCallback((stack: CardStackConfig) => (
     <section id={stack.id} key={stack.id}
-      className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100vh-160px)] box-border`}>
+      className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100dvh-160px)] box-border`}>
     </section>
   ), []);
 
@@ -242,27 +214,24 @@ export default function App() {
     if (!stack.visible) {
       return (
         <section id={stack.id} key={stack.id}
-          className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100vh-160px)] opacity-0 pointer-events-none select-none box-border`}>
+          className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100dvh-160px)] opacity-0 pointer-events-none select-none box-border`}>
         </section>
       );
     }
 
     return (
       <section id={stack.id} key={stack.id}
-        // 外层锁定 372px，维持和底部控制栏完美对齐，加上 relative 作为基准
-        className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100vh-160px)] relative box-border`}>
-        
-        {/* 负边距外扩容纳阴影 + mask-image 顶部底部分散过渡 + 卡片沉底 */}
-        <div 
+        className={`snap-center shrink-0 ${stack.stackWidth} ${stack.stackMaxWidth || ''} h-[calc(100dvh-160px)] relative box-border`}>
+
+        <div
           className={`absolute -inset-x-10 -inset-y-8 px-10 pt-8 flex flex-wrap content-end ${stack.gap || 'gap-4'} overflow-y-auto hide-scrollbar`}
-          style={{ 
+          style={{
             WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 32px, black calc(100% - 32px), transparent 100%)',
             maskImage: 'linear-gradient(to bottom, transparent 0%, black 32px, black calc(100% - 32px), transparent 100%)'
           }}
         >
           {stack.cards.map((card) => renderCard(card))}
-          
-          {/* 底部垫片：为卡片阴影提供渲染空间 */}
+
           <div className="w-full h-8 shrink-0 pointer-events-none"></div>
         </div>
       </section>
@@ -273,7 +242,6 @@ export default function App() {
 
   return (
     <div className="w-full h-full flex flex-col font-sans antialiased selection:bg-blue-100 selection:text-blue-900 dark:selection:bg-blue-900/50 relative overflow-hidden">
-      {/* ---------- 背景层 ---------- */}
       <div className="fixed inset-0 z-0 pointer-events-none transition-all duration-500 overflow-hidden">
         <div className={`absolute inset-0 transition-all duration-500 ${useCustomBg ? '' : presetStyle}`}>
           {useCustomBg && customBgUrl ? (
@@ -285,7 +253,6 @@ export default function App() {
                 className="w-full h-full object-cover scale-105 transition-opacity duration-500" alt="Custom" />
             )
           ) : (
-            // 所有主题都显示壁纸
             themePresets[currentThemeId]?.wallpaper?.url && (
               <img id="main-bg-element"
                 src={themePresets[currentThemeId]!.wallpaper.url}
@@ -297,7 +264,6 @@ export default function App() {
         <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-transparent dark:from-black/20 transition-colors duration-500"></div>
       </div>
 
-      {/* ---------- 顶栏 + 设置面板 ---------- */}
       <Header
         isGlassUI={isGlassUI} setIsGlassUI={setIsGlassUI}
         useCustomBg={useCustomBg} setUseCustomBg={setUseCustomBg}
@@ -308,13 +274,11 @@ export default function App() {
         locale={locale} onLocaleChange={handleLocaleChange}
       />
 
-      {/* ---------- AI 对话 ---------- */}
       <AIChatModule isChatOpen={isChatOpen} isGlassUI={isGlassUI}
         messages={messages} isStreaming={isStreaming}
         sendMessage={sendMessage} locale={locale}
       />
 
-      {/* ---------- 卡片堆横向滚动区 ---------- */}
       <main id="main-scroll-container" onWheel={handleWheel}
         className={`fixed top-0 bottom-0 left-0 w-full flex flex-row items-end overflow-x-auto snap-x snap-mandatory scroll-smooth hide-scrollbar mask-image-top pb-[112px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isChatOpen ? 'opacity-0 -z-10 scale-95 blur-md pointer-events-none' : 'opacity-100 z-40 scale-100 blur-0 pointer-events-auto'}`}>
         <div className="shrink-0" style={{ width: 'calc(50vw - min(190px, 47vw))' }}></div>
@@ -330,7 +294,6 @@ export default function App() {
         <div className="shrink-0" style={{ width: 'calc(50vw - min(190px, 47vw))' }}></div>
       </main>
 
-      {/* ---------- 底栏导航+音乐播放器 ---------- */}
       <BottomFloatingPill
         activeId={activeSectionId} isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen}
         isPlaying={isPlaying} isGlassUI={isGlassUI} dispatch={dispatchAction}

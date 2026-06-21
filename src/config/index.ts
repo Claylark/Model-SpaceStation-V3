@@ -26,11 +26,6 @@ function stackBase(sectionId: string, cardId: string, title: string, subtitle: s
   };
 }
 
-/**
- * 默认卡片堆配置
- * 6 个堆对应 5 个导航 Section（profile 有 2 个堆）
- * 每个堆内部使用 flex flex-wrap 自由排列卡片
- */
 export const APP_CONFIG: AppConfig = {
   meta: { version: '3.0', appName: 'Clay SpaceStation' },
   themeSystem: {

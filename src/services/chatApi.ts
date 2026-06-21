@@ -1,9 +1,5 @@
 import type { ChatMessage } from '../types/config';
 
-/**
- * DeepSeek V4 Flash 流式请求
- * 通过 Vite 代理避免 CORS
- */
 export async function streamDeepSeek(
   messages: ChatMessage[],
   deepThink: boolean,
@@ -13,7 +9,6 @@ export async function streamDeepSeek(
 ): Promise<void> {
   const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
   if (!apiKey) {
-    // 没有 API Key 时使用本地 mock 流式
     mockStream(onToken, onComplete);
     return;
   }
@@ -69,7 +64,6 @@ export async function streamDeepSeek(
             onToken(content);
           }
         } catch {
-          // 跳过非 JSON 行
         }
       }
     }
@@ -79,7 +73,6 @@ export async function streamDeepSeek(
   }
 }
 
-/** 本地 Mock 流式输出 */
 function mockStream(onToken: (token: string) => void, onComplete: () => void) {
   const mockText = '（Demo 模式）我是ClaySeek！DeepSeek API Key 未配置。请在 .env 文件中设置 VITE_DEEPSEEK_API_KEY 以启用真实 AI 对话。';
   let i = 0;

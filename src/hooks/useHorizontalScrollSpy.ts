@@ -1,10 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { CardStackConfig } from '../types/config';
 
-/**
- * 横向滚动监听：检测当前视口在哪个卡片堆
- * 返回该堆的 sectionId（用于底部导航高亮）和堆索引（用于惰性渲染）
- */
 export function useHorizontalScrollSpy(stacks: CardStackConfig[], containerId: string) {
   const [activeSectionId, setActiveSectionId] = useState(stacks[0]?.sectionId || '');
 
@@ -45,7 +41,6 @@ export function useHorizontalScrollSpy(stacks: CardStackConfig[], containerId: s
     };
   }, [stacks, containerId]);
 
-  /** 当前激活的堆在 stacks 数组中的索引（用于惰性渲染范围计算） */
   const activeStackIndex = useMemo(
     () => stacks.findIndex(s => s.sectionId === activeSectionId),
     [stacks, activeSectionId],

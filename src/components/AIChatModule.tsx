@@ -36,7 +36,6 @@ export default function AIChatModule({ isChatOpen, isGlassUI, messages, isStream
     <div className={`fixed top-[68px] bottom-[112px] left-0 w-full flex flex-col items-center justify-end transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]
       ${isChatOpen ? 'z-[45]' : '-z-10 pointer-events-none'}`}
     >
-      {/* 消息列表 */}
       <div className={`w-[372px] max-w-[94vw] flex-1 overflow-y-auto hide-scrollbar flex flex-col pb-4 px-1 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]
         ${isChatOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-10 pointer-events-none'}`}
       >
@@ -61,7 +60,6 @@ export default function AIChatModule({ isChatOpen, isGlassUI, messages, isStream
         </div>
       </div>
 
-      {/* 输入区 */}
       <div className={`shrink-0 w-[372px] max-w-[94vw] h-[15vh] min-h-[140px] rounded-[32px] flex flex-col p-4 box-border transition-all duration-500 delay-75
         ${isChatOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-10 pointer-events-none'}
         ${isGlassUI
@@ -80,7 +78,6 @@ export default function AIChatModule({ isChatOpen, isGlassUI, messages, isStream
 
         <div className="flex justify-between items-center mt-2 shrink-0">
           <div className="flex items-center gap-2">
-            {/* 模型选择 */}
             <div className="relative flex items-center overflow-visible">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -111,7 +108,6 @@ export default function AIChatModule({ isChatOpen, isGlassUI, messages, isStream
               )}
             </div>
 
-            {/* 深度思考 */}
             <button
               onClick={() => setIsDeepThink(!isDeepThink)}
               title={t.deepThink}
@@ -129,7 +125,6 @@ export default function AIChatModule({ isChatOpen, isGlassUI, messages, isStream
             </button>
           </div>
 
-          {/* 发送按钮 */}
           <button onClick={handleSend}
             title="发送消息"
             className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all duration-300

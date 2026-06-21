@@ -12,9 +12,19 @@ export function usePlaylist() {
 
   useEffect(() => {
     const audio = new Audio();
+    audio.loop = false;
     audio.volume = 0.4;
     audioRef.current = audio;
-    return () => { audio.pause(); };
+
+    const handleEnded = () => {
+      setCurrentIndex(prev => (prev + 1) % tracks.length);
+    };
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('ended', handleEnded);
+      audio.pause();
+    };
   }, []);
 
   useEffect(() => {

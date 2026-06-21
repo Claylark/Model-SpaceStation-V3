@@ -1,4 +1,3 @@
-// 🔒 预留：文件上传接口
 export async function uploadFile(file: File): Promise<{ url: string }> {
   const formData = new FormData();
   formData.append('file', file);

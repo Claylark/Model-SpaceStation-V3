@@ -39,7 +39,6 @@ export default function BottomFloatingPill({
         : 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] shadow-[0_10px_25px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.4)]'
       }`}
     >
-      {/* Chat 切换 */}
       <button
         onClick={() => setIsChatOpen(!isChatOpen)}
         title={isChatOpen ? '关闭 AI 对话' : '打开 AI 对话'}
@@ -55,7 +54,6 @@ export default function BottomFloatingPill({
 
       {/* Nav / Player 双面板 */}
       <div className="flex-1 max-w-[244px] h-[52px] mx-[6px] relative overflow-hidden bg-black/5 dark:bg-[#000000]/50 rounded-[26px] border border-white/20 dark:border-white/5 box-border">
-        {/* ---- 导航 ---- */}
         <nav className={`absolute inset-0 w-full h-full flex items-center justify-between p-[4px] transition-all duration-500 ease-in-out ${isPlayerOpen ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100 pointer-events-auto'}`}>
           {sections.map(id => {
             const isSelected = activeId === id;
@@ -82,7 +80,6 @@ export default function BottomFloatingPill({
           })}
         </nav>
 
-        {/* ---- 播放器 ---- */}
         <div className={`absolute inset-0 w-full h-full flex items-center justify-between p-[5px] transition-all duration-500 ease-in-out ${isPlayerOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-full opacity-0 pointer-events-none'}`}>
           <div className="flex-1 flex flex-col justify-center pl-2 min-w-0 text-left">
             <span className="text-xs font-bold text-gray-900 dark:text-white truncate leading-tight mb-[1px]">{currentTrack?.title || t.player.noTrack}</span>
@@ -105,7 +102,6 @@ export default function BottomFloatingPill({
         </div>
       </div>
 
-      {/* 音乐切换 */}
       <div className="w-[52px] h-[52px] shrink-0 z-20">
         <button
           onClick={() => setIsPlayerOpen(!isPlayerOpen)}

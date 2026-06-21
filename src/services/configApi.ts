@@ -1,7 +1,6 @@
 import type { AppConfig } from '../types/config';
 import { apiClient } from './apiClient';
 
-// 🔒 预留：配置 CRUD 接口
 export async function fetchAppConfig(): Promise<AppConfig> {
   return apiClient.get('/api/config');
 }

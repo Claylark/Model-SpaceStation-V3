@@ -2,10 +2,6 @@ import type { CardConfig, CardStackConfig } from '../types/config';
 
 type DeepPartial<T> = T extends object ? { [P in keyof T]?: DeepPartial<T[P]> } : T;
 
-/**
- * 深度合并：target 为基座，source 为覆写
- * 三级优先级：base → themeOverride → forceOverride
- */
 export function mergeCardConfig(
   base: CardConfig,
   themeOverride?: DeepPartial<CardConfig>,
@@ -24,10 +20,6 @@ export function mergeCardConfig(
   return result as unknown as CardConfig;
 }
 
-/**
- * 卡片堆深度合并
- * 合并堆级属性后，再对堆内每张卡片调用 mergeCardConfig
- */
 export function mergeStackConfig(
   base: CardStackConfig,
   themeOverride?: DeepPartial<CardStackConfig>,
@@ -37,10 +29,8 @@ export function mergeStackConfig(
   const merged = deepClone(base) as unknown as Record<string, unknown>;
   const override = deepClone(themeOverride) as unknown as Record<string, unknown>;
 
-  // 合并堆级属性（stackWidth, stackMaxWidth, gap, sectionId, visible 等）
   const stackMerged = deepMerge(merged, override) as unknown as CardStackConfig;
 
-  // 堆内卡片：按 id 匹配合并
   const overrideCards = themeOverride.cards as DeepPartial<CardConfig>[] | undefined;
   if (overrideCards && Array.isArray(overrideCards)) {
     stackMerged.cards = stackMerged.cards.map((baseCard) => {
@@ -63,9 +53,34 @@ function deepMerge(target: Record<string, unknown>, source: Record<string, unkno
   const output = { ...target };
   for (const key of Object.keys(source)) {
     if (source[key] !== undefined && source[key] !== null) {
-      // arrays (like cards[]) should replace, not deep-merge
       if (Array.isArray(source[key])) {
-        output[key] = source[key];
+        const targetArr = output[key];
+        if (
+          Array.isArray(targetArr) &&
+          targetArr.length > 0 &&
+          source[key].length > 0 &&
+          typeof source[key][0] === 'object' &&
+          source[key][0] !== null &&
+          typeof targetArr[0] === 'object' &&
+          targetArr[0] !== null &&
+          'id' in (source[key][0] as Record<string, unknown>) &&
+          'id' in (targetArr[0] as Record<string, unknown>)
+        ) {
+          const mergedArr = [...targetArr] as Record<string, unknown>[];
+          for (const sourceItem of source[key] as Record<string, unknown>[]) {
+            const idx = mergedArr.findIndex(
+              (item) => item.id === sourceItem.id,
+            );
+            if (idx >= 0) {
+              mergedArr[idx] = deepMerge(mergedArr[idx], sourceItem);
+            } else {
+              mergedArr.push(sourceItem);
+            }
+          }
+          output[key] = mergedArr;
+        } else {
+          output[key] = source[key];
+        }
       } else if (isObject(source[key]) && isObject(output[key])) {
         output[key] = deepMerge(output[key] as Record<string, unknown>, source[key] as Record<string, unknown>);
       } else {
