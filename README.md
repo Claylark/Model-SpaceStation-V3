@@ -7,5 +7,6 @@
 🌐 **8 语言** — 简繁英法俄西阿，RTL 支持  
 🤖 **AI 对话** — DeepSeek 流式聊天  
 🎵 **音乐播放器** — 内置歌单  
+🛡️ **Anti-SEO 隐私装甲** — 无障碍页 `noindex` + `robots.txt` 双重防爬虫，防人肉防开盒
 
 基于 [Claylark 开源软件使用许可协议](https://github.com/Claylark/Clay-SpaceStation/blob/main/License.md)

@@ -1,0 +1,2 @@
+User-agent: *
+Disallow: /a11y.html
