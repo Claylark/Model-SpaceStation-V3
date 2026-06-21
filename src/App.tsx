@@ -151,6 +151,23 @@ export default function App() {
     }
   }, []);
 
+  useEffect(() => {
+    const a11yData = {
+      stacks: APP_CONFIG.stacks.map(s => ({
+        id: s.id,
+        sectionId: s.sectionId,
+        cards: s.cards.map(c => ({
+          id: c.id,
+          title: (c.body.props as Record<string, unknown>)?.title as string || '',
+          subtitle: (c.body.props as Record<string, unknown>)?.subtitle as string || '',
+          lines: (c.body.props as Record<string, unknown>)?.lines as string[] || [],
+          tag: (c.body.props as Record<string, unknown>)?.tag as string || '',
+        }))
+      })),
+    };
+    sessionStorage.setItem('A11Y_DATA', JSON.stringify(a11yData));
+  }, [locale]);
+
   const { activeSectionId, activeStackIndex } = useHorizontalScrollSpy(APP_CONFIG.stacks, 'main-scroll-container');
 
   const resolveCardConfig = useCallback((baseCard: CardConfig, themeId: string): CardConfig => {
@@ -241,6 +258,11 @@ export default function App() {
   const presetStyle = themePresets[currentThemeId]?.style || '';
 
   return (
+    <>
+    <a href="/a11y.html"
+      className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[9999] focus:bg-white focus:text-black focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:text-sm focus:font-bold">
+      跳转到纯文字介绍页
+    </a>
     <div className="w-full h-full flex flex-col font-sans antialiased selection:bg-blue-100 selection:text-blue-900 dark:selection:bg-blue-900/50 relative overflow-hidden">
       <div className="fixed inset-0 z-0 pointer-events-none transition-all duration-500 overflow-hidden">
         <div className={`absolute inset-0 transition-all duration-500 ${useCustomBg ? '' : presetStyle}`}>
@@ -304,5 +326,6 @@ export default function App() {
         locale={locale}
       />
     </div>
+    </>
   );
 }
