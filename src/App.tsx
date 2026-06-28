@@ -303,7 +303,7 @@ export default function App() {
 
       <main id="main-scroll-container" onWheel={handleWheel}
         className={`fixed top-0 bottom-0 left-0 w-full flex flex-row items-end overflow-x-auto snap-x snap-mandatory scroll-smooth hide-scrollbar mask-image-top pb-[112px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isChatOpen ? 'opacity-0 -z-10 scale-95 blur-md pointer-events-none' : 'opacity-100 z-40 scale-100 blur-0 pointer-events-auto'}`}>
-        <div className="shrink-0" style={{ width: 'calc(50vw - min(190px, 47vw))' }}></div>
+        <div className="shrink-0" style={{ width: 'calc(50vw - min(186px, 47vw))' }}></div>
         {APP_CONFIG.stacks.map((stack, idx) => {
           const isInViewport = Math.abs(idx - activeStackIndex) <= 2;
           return (
@@ -313,7 +313,7 @@ export default function App() {
             </div>
           );
         })}
-        <div className="shrink-0" style={{ width: 'calc(50vw - min(190px, 47vw))' }}></div>
+        <div className="shrink-0" style={{ width: 'calc(50vw - min(186px, 47vw))' }}></div>
       </main>
 
       <BottomFloatingPill

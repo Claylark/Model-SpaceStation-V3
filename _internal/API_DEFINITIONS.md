@@ -381,11 +381,19 @@ function useHorizontalScrollSpy(
 AI 聊天流式输出。返回：
 ```ts
 {
-  messages: ChatMessage[];       // 聊天记录
+  messages: ChatMessage[];       // 聊天记录（含 reasoning 思维链字段）
+  setMessages: React.Dispatch<...>;
   isStreaming: boolean;          // 是否正在流式输出
-  sendMessage: (text: string) => void;  // 发送消息
+  sendMessage: (content: string, model: AIModel, isDeepThink: boolean) => void;
 }
 ```
+
+**v3.0 更新：**
+- `sendMessage` 签名改为 `(content, model, isDeepThink)` 三参数
+- `model` 支持 `'DeepSeek Flash' | 'DeepSeek Pro'`
+- `isDeepThink` 为 true 时启用 `thinking: { type: 'enabled', reasoning_effort: 'high' }`
+- `ChatMessage` 新增 `reasoning?: string` 字段存储 DeepSeek V4 思维链
+- 流式回调 `onToken` 接受 `(token, type: 'content' | 'reasoning')` 双类型参数
 
 ---
 

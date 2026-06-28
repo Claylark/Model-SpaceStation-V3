@@ -216,17 +216,14 @@ Line 1:     const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localh
 
 ---
 
-## src/services/chatApi.ts（5条注释）
+## src/services/chatApi.ts（2条注释）
 
 ```
 Line 1-2:   /**
-            * DeepSeek V4 Flash 流式请求
+            * Chat API 流式请求（通过本地 /api/chat 代理）
             */
-Line 6:     // 没有 API Key 时使用本地 mock 流式
-Line 19:          // 跳过非 JSON 行
-Line 27-28: /**
-             * 本地 Mock 流式输出
-             */
+Line 52-55: // 前端照常捕获 V4 推理流 Token
+            // 前端照常捕获正文回复流 Token
 ```
 
 ---

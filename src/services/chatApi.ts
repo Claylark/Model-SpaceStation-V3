@@ -1,39 +1,28 @@
-import type { ChatMessage } from '../types/config';
+import type { ChatMessage, AIModel } from '../types/config';
 
 export async function streamDeepSeek(
+  model: AIModel,
   messages: ChatMessage[],
   deepThink: boolean,
-  onToken: (token: string) => void,
+  onToken: (token: string, type: 'content' | 'reasoning') => void,
   onComplete: () => void,
   onError: (err: Error) => void,
 ): Promise<void> {
-  const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
-  if (!apiKey) {
-    mockStream(onToken, onComplete);
-    return;
-  }
-
   try {
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    // 🎯 核心改变：请求你本地域名下的 Cloudflare Functions 代理路由
+    const response = await fetch('/api/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: deepThink ? 'deepseek-reasoner' : 'deepseek-chat',
-        messages: messages.map(m => ({ role: m.role, content: m.text })),
-        stream: true,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, messages, deepThink }),
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      throw new Error(`Functions Proxy Error: ${response.status}`);
     }
 
     const reader = response.body?.getReader();
     if (!reader) {
-      throw new Error('No response body');
+      throw new Error('No stream response body received from Cloudflare Functions.');
     }
 
     const decoder = new TextDecoder();
@@ -59,11 +48,20 @@ export async function streamDeepSeek(
 
         try {
           const parsed = JSON.parse(data);
+
+          // 前端照常捕获 V4 推理流 Token
+          const reasoningContent = parsed.choices?.[0]?.delta?.reasoning_content;
+          if (reasoningContent) {
+            onToken(reasoningContent, 'reasoning');
+          }
+
+          // 前端照常捕获正文回复流 Token
           const content = parsed.choices?.[0]?.delta?.content;
           if (content) {
-            onToken(content);
+            onToken(content, 'content');
           }
         } catch {
+          // 容错处理
         }
       }
     }
@@ -71,18 +69,4 @@ export async function streamDeepSeek(
   } catch (err) {
     onError(err instanceof Error ? err : new Error('Unknown error'));
   }
-}
-
-function mockStream(onToken: (token: string) => void, onComplete: () => void) {
-  const mockText = '（Demo 模式）我是ClaySeek！DeepSeek API Key 未配置。请在 .env 文件中设置 VITE_DEEPSEEK_API_KEY 以启用真实 AI 对话。';
-  let i = 0;
-  const interval = setInterval(() => {
-    if (i < mockText.length) {
-      onToken(mockText[i]);
-      i++;
-    } else {
-      clearInterval(interval);
-      onComplete();
-    }
-  }, 50);
 }

@@ -80,7 +80,7 @@ export default function BottomFloatingPill({
           })}
         </nav>
 
-        <div className={`absolute inset-0 w-full h-full flex items-center justify-between p-[5px] transition-all duration-500 ease-in-out ${isPlayerOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-full opacity-0 pointer-events-none'}`}>
+        <div dir="ltr" className={`absolute inset-0 w-full h-full flex items-center justify-between p-[5px] transition-all duration-500 ease-in-out ${isPlayerOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-full opacity-0 pointer-events-none'}`}>
           <div className="flex-1 flex flex-col justify-center pl-2 min-w-0 text-left">
             <span className="text-xs font-bold text-gray-900 dark:text-white truncate leading-tight mb-[1px]">{currentTrack?.title || t.player.noTrack}</span>
             <span className="text-[9px] font-medium text-gray-500 dark:text-gray-400 truncate leading-tight">{currentTrack?.artist || ''}</span>

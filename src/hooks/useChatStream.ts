@@ -16,7 +16,7 @@ export function useChatStream() {
     if (!content.trim()) return;
 
     const userMsg: ChatMessage = { role: 'user', text: content };
-    const aiMsg: ChatMessage = { role: 'ai', text: '' };
+    const aiMsg: ChatMessage = { role: 'ai', text: '', reasoning: '' };
 
     const prevMessages = messagesRef.current;
 
@@ -35,24 +35,37 @@ export function useChatStream() {
       });
     };
 
+    const updateReasoning = (updater: (text: string) => string) => {
+      setMessages(prev => {
+        const updated = [...prev];
+        if (updated[aiIndex] && updated[aiIndex].role === 'ai') {
+          updated[aiIndex] = {
+            ...updated[aiIndex],
+            reasoning: updater(updated[aiIndex].reasoning || ''),
+          };
+        }
+        return updated;
+      });
+    };
+
     try {
-      if (model === 'DeepSeek') {
-        await streamDeepSeek(
-          [...prevMessages, userMsg],
-          isDeepThink,
-          (token) => updateAi(t => t + token),
-          () => setIsStreaming(false),
-          (error) => {
-            updateAi(() => `[错误] ${error.message}`);
-            setIsStreaming(false);
+      await streamDeepSeek(
+        model,
+        [...prevMessages, userMsg],
+        isDeepThink,
+        (token, type) => {
+          if (type === 'reasoning') {
+            updateReasoning(t => t + token);
+          } else {
+            updateAi(t => t + token);
           }
-        );
-      } else {
-        setTimeout(() => {
-          updateAi(() => `[${model}] 即将支持，敬请期待！`);
+        },
+        () => setIsStreaming(false),
+        (error) => {
+          updateAi(() => `[错误] ${error.message}`);
           setIsStreaming(false);
-        }, 800);
-      }
+        }
+      );
     } catch (err) {
       updateAi(() => `[错误] ${err instanceof Error ? err.message : '未知错误'}`);
       setIsStreaming(false);

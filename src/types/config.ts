@@ -91,9 +91,12 @@ export type ComponentRegistry = Record<string, React.ComponentType<ComponentProp
 export interface ChatMessage {
   role: 'user' | 'ai';
   text: string;
+  /** DeepSeek V4 思维链（推理过程），仅在 role='ai' 时有效 */
+  reasoning?: string;
+
 }
 
-export type AIModel = 'DeepSeek' | 'Gemini' | 'GPT-4o';
+export type AIModel = 'DeepSeek Flash' | 'DeepSeek Pro';
 
 export type ModelStatus = 'active' | 'coming-soon';
 
@@ -140,7 +143,7 @@ export interface ChatStreamRequest {
 }
 
 export interface ChatStreamCallbacks {
-  onToken: (token: string) => void;
+  onToken: (token: string, type: 'content' | 'reasoning') => void;
   onComplete: () => void;
   onError: (error: Error) => void;
 }
