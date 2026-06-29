@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
               const chunks = []
               for await (const chunk of req) chunks.push(chunk)
               const body = JSON.parse(Buffer.concat(chunks).toString())
-              const { model, messages, deepThink } = body
+              const { model, messages, deepThink, systemPrompt } = body
 
               const apiKey = env.DEEPSEEK_API_KEY
               if (!apiKey) {
@@ -29,10 +29,13 @@ export default defineConfig(({ mode }) => {
 
               const apiModel = model === 'DeepSeek Pro' ? 'deepseek-v4-pro' : 'deepseek-v4-flash'
 
-              const cleanMessages = (messages || []).map(m => ({
-                role: m.role === 'ai' ? 'assistant' : m.role,
-                content: m.text || m.content,
-              }))
+              const cleanMessages = [
+                { role: 'system', content: systemPrompt || '' },
+                ...(messages || []).map(m => ({
+                  role: m.role === 'ai' ? 'assistant' : m.role,
+                  content: m.text || m.content,
+                })),
+              ]
 
               const response = await fetch('https://api.deepseek.com/chat/completions', {
                 method: 'POST',

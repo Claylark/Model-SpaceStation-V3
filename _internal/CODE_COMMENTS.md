@@ -1,12 +1,11 @@
-# 代码注释合集
+# Model SpaceStation v3.0.1 — 代码注释合集
 
-> ⚠️ 本文件记录所有从源文件中剥离的注释。
-> 如需修改对应源码逻辑，请先在本文件中按行号查找到对应注释上下文，
-> 再回到无注释源码中定位修改位置。
+> 所有从源文件中剥离的注释。
+> 修改源码前请先在本文件中按行号定位对应注释上下文。
 
 ---
 
-## src/types/config.ts（32条注释）
+## src/types/config.ts
 
 ```
 Line 1-3:   // ==========================================
@@ -37,7 +36,7 @@ Line 99:    /** 区块定义 */
 Line 105:   // ---- 歌单相关 ----
 Line 107:   /** 单首歌曲 */
 Line 116:   // ---- 组件注册相关 ----
-Line 118:   /** 组件注册表 */
+Line 118:   /** 组件注册表 - 含物料描述协议 Schema */
 Line 123:   // ---- 聊天相关 ----
 Line 125:   /** 聊天消息 */
 Line 130:   /** AI 模型 */
@@ -56,43 +55,54 @@ Line 179:   /** 强制配置 */
 Line 188:   // ---- API 服务相关 ----
 Line 190:   /** Chat API 流式请求体 */
 Line 195:   /** Chat API 流式回调 */
-Line 204:   // ---- i18n 类型 ----
-Line 206:   /** 文案结构 */
+Line 204:   // ---- 动作与 Context 相关 ----
+Line 206:   /** 全局动作联合类型 */
+Line 210:   /** 动作资产元数据 */
+Line 214:   /** 动作资产可枚举目录 */
+Line 220:   /** App Context 值接口 */
+Line 226:   /** 全局应用状态 */
+Line 242:   // ---- i18n 类型 ----
+Line 244:   /** 文案结构 */
 ```
 
 ---
 
-## src/App.tsx（28条注释）
+## src/context/AppContext.tsx（新增）
+
+```
+Line 1-2:   /**
+            * AppContext - 全局事件总线 Provider
+            * 聚合 useTheme + usePlaylist + useChatStream + useHorizontalScrollSpy
+            * 暴露 state / dispatch / 原子化数据突变函数
+            */
+```
+
+---
+
+## src/App.tsx
 
 ```
 Line 1-9:   /**
             * App.tsx - 星壤空间站 V3 主应用入口
             *
             * 职责：
-            * - 初始化主题、语言、播放列表、ChatBot 等核心状态
-            * - 渲染背景层（主题壁纸/自定义背景）
-            * - 渲染 Header（顶栏+设置面板）、AIChatModule（AI 对话）、
-            *   BottomFloatingPill（底栏导航+音乐播放器）
+            * - Provider 包裹全局 Context
+            * - AppShell 负责渲染背景层、Header、AIChatModule、卡片堆、BottomFloatingPill
             * - 横向滚动卡片堆容器（卡片堆内部 flex-wrap 自由排列卡片）
             */
 Line 31-33: // ==========================================
             // 🚫 DO NOT DELETE - 液态玻璃常量（三层兜底）
             // ==========================================
-Line 50:    /** 当前语言状态（react state，切换会触发子组件重渲染） */
-Line 53:    /** 切换语言时同时更新全局 i18n（html lang/dir）和本地 state */
-Line 63:    // 路由主题优先级
-Line 74:    // 路由语言同步到本地 state
-Line 81:    // dark mode 初始化
+Line 50:    /** 背景亮度检测 */
+Line 63:    // 背景亮度检测
 Line 90:    // 背景亮度检测
-Line 120:   /** 导航/动作分发 */
-Line 124:        // 查找第一个匹配 sectionId 的堆
-Line 142:   /** 滚轮横向滚动（在卡片堆之间切换） */
+Line 120:   /** 滚轮横向滚动（在卡片堆之间切换） */
 Line 177:   /** 解析卡片配置（base + theme override） */
-Line 183:   /** 渲染单张卡片（堆内使用） */
+Line 183:   /** 渲染单张卡片（堆内使用 - 动态 Registry 查找 + ErrorBoundary 包裹） */
 Line 232-236:/**
-             * 渲染堆占位符：保留 DOM 节点（id + 尺寸）用于 snap 定位，
-             * 但不渲染内部卡片内容（惰性渲染优化）
-             */
+            * 渲染堆占位符：保留 DOM 节点（id + 尺寸）用于 snap 定位，
+            * 但不渲染内部卡片内容（惰性渲染优化）
+            */
 Line 250:        // 外层锁定 372px，维持和底部控制栏完美对齐，加上 relative 作为基准
 Line 256:        {/* 负边距外扩容纳阴影 + mask-image 顶部底部分散过渡 + 卡片沉底 */}
 Line 267:        {/* 底部垫片：为卡片阴影提供渲染空间 */}
@@ -124,25 +134,20 @@ Line 14:    // 聊天消息列表，初始有一条 AI 问候语
 Line 17:    // 是否正在接收流式输出（用于 UI 显示加载态、禁止重复发送）
 Line 20:    // 用 ref 保存最新的 messages，避免 sendMessage 闭包捕获旧值
 Line 22-24: /**
-             * 发送消息到 AI
-             */
+            * 发送消息到 AI
+            */
 Line 28:    // 记录发送前的消息列表快照，用于计算 AI 消息索引
 Line 37:    // 同时追加用户消息和占位 AI 消息
 Line 39:    // AI 消息在数组中的索引 = 追加前长度 + 1（跳过用户消息）
 Line 41-43: /**
-             * 安全更新 AI 消息文本的辅助函数
-             */
+            * 安全更新 AI 消息文本的辅助函数
+            */
 Line 47:        // 防御性检查：确保索引有效且确实是 AI 消息
 Line 52:        // DeepSeek V4 Flash 流式请求
 Line 56:          [...prevMessages, userMsg],  // 传入对话历史 + 新用户消息
 Line 63:          (token) => updateAi(t => t + token),   // 每收到一个 token 就追加
 Line 64:          () => setIsStreaming(false),            // 流结束
-Line 73:        // Gemini / GPT-4o 预留：模拟延迟后显示"即将支持"
 Line 80:  }, []); // 空依赖：sendMessage 内部通过 ref 获取最新 messages
-Line 86-89:    messages,       // ChatMessage[] - 所有聊天消息
-              setMessages,    // React.Dispatch - 手动设置消息（用于清空等）
-              isStreaming,    // boolean - 是否正在流式输出
-              sendMessage,    // (content, model, isDeepThink) => void - 发送消息
 ```
 
 ---
@@ -179,9 +184,9 @@ Line 5-7:   /**
             * 三级优先级：base → themeOverride → forceOverride
             */
 Line 27-30: /**
-             * 卡片堆深度合并
-             * 合并堆级属性后，再对堆内每张卡片调用 mergeCardConfig
-             */
+            * 卡片堆深度合并
+            * 合并堆级属性后，再对堆内每张卡片调用 mergeCardConfig
+            */
 Line 37:    // 合并堆级属性（stackWidth, stackMaxWidth, gap, sectionId, visible 等）
 Line 42:    // 堆内卡片：按 id 匹配合并
 Line 67:        // 按 id 智能合并：数组元素是含 id 的对象则按 id 深度合并，否则整体替换
@@ -202,8 +207,19 @@ Line 1:     /**
 ## src/config/_base/componentRegistry.ts（2条注释）
 
 ```
-Line 1:     // 组件注册表：名字 → 组件映射
-Line 3:     // 在 App.tsx 中初始化时会注入实际的 React 组件
+Line 1:     // 组件注册表：名字 → { component, schema } 映射
+Line 3:     // 新增卡片只需在此注册，App.tsx 无需修改
+```
+
+---
+
+## src/components/CardErrorBoundary.tsx（新增）
+
+```
+Line 1-3:   /**
+            * CardErrorBoundary - 卡片级故障隔离
+            * 捕获子组件渲染异常，降级显示错误提示，不影响全局
+            */
 ```
 
 ---
@@ -316,22 +332,43 @@ Line 16:      {/* 音乐切换 */}
 
 ---
 
-### src/App.tsx 新增 a11y 无障碍代码（无注释，此处说明）
+## src/main.tsx（1条注释）
 
 ```
-Line 154-169: useEffect 写入 sessionStorage
-  - locale 变化时遍历 APP_CONFIG.stacks，提取 title/subtitle/lines/tag
-  - 写入 sessionStorage['A11Y_DATA']
+Line 6:     // 初始化 RTL 方向设置
+```
 
-Line 261-265: 幽灵锚点
-  <a href="/a11y.html" className="sr-only focus:not-sr-only ...">
-  跳转到纯文字介绍页
+---
 
-public/a11y.html：独立纯文字页
-  - 从 sessionStorage 读取 A11Y_DATA
-  - 按 h2 → h3 → p → ul 结构化输出所有卡片文字
-  - 无 Header/AI/播放器/设置
-  - 底部"返回主界面"回到 /
+## src/services/systemPrompt.ts（新增）
+
+```
+Line 1-2:   /**
+            * systemPrompt - AI 聊天系统提示词生成器
+            * buildPageContext() 从 APP_CONFIG.stacks 提取页面简介
+            * buildSystemPrompt() 生成完整提示词（含时间、歌曲、角色定义）
+            */
+```
+
+---
+
+## a11y 无障碍代码（无注释，此处说明）
+
+```
+App.tsx:
+  useEffect 写入 sessionStorage
+    - locale 变化时遍历 APP_CONFIG.stacks，提取 title/subtitle/lines/tag
+    - 写入 sessionStorage['A11Y_DATA']
+
+  幽灵锚点:
+    <a href="/a11y.html" className="sr-only focus:not-sr-only ...">
+    跳转到纯文字介绍页
+
+public/a11y.html: 独立纯文字页
+    - 从 sessionStorage 读取 A11Y_DATA
+    - 按 h2 → h3 → p → ul 结构化输出所有卡片文字
+    - 无 Header/AI/播放器/设置
+    - 底部"返回主界面"回到 /
 ```
 
 ---

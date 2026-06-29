@@ -1,28 +1,24 @@
 import { useState } from 'react';
 import Icon from './Icon';
-import { themePresets } from '../config/_base/themePresets';
+import { APP_CONFIG, themePresets } from '../config/index';
 import { locales } from '../i18n/index';
 import type { LocaleCode } from '../types/config';
+import { useAppContext } from '../context/AppContext';
 
 interface HeaderProps {
-  isGlassUI: boolean; setIsGlassUI: (v: boolean) => void;
   useCustomBg: boolean; setUseCustomBg: (v: boolean) => void;
   customBgUrl: string; setCustomBgUrl: (v: string) => void;
   customBgType: 'image' | 'video'; setCustomBgType: (v: 'image' | 'video') => void;
   isBgDark: boolean;
-  currentThemeId: string; setCurrentThemeId: (v: string) => void;
-  isDark: boolean; toggleDarkMode: () => void;
-  locale: LocaleCode;
-  onLocaleChange: (locale: LocaleCode) => void;
 }
 
 export default function Header({
-  isGlassUI, setIsGlassUI, useCustomBg, setUseCustomBg,
+  useCustomBg, setUseCustomBg,
   customBgUrl, setCustomBgUrl, customBgType: _customBgType, setCustomBgType,
-  isBgDark, currentThemeId, setCurrentThemeId,
-  isDark, toggleDarkMode,
-  locale, onLocaleChange,
+  isBgDark,
 }: HeaderProps) {
+  const { state, dispatch } = useAppContext();
+  const { locale, currentThemeId, isDark, isGlassUI } = state;
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -63,12 +59,12 @@ export default function Header({
       <header className={`fixed top-0 left-0 w-full px-5 h-[68px] flex justify-between items-center backdrop-blur-xl border-b z-50 transition-colors duration-300 ${isGlassUI ? themePresets[currentThemeId]?.ui?.header || '' : 'bg-white/40 dark:bg-[#0a0a0a]/40 border-gray-200/50 dark:border-white/5'} ${isBgDark ? 'text-white' : 'text-gray-800'}`}>
         <div className="flex-shrink-0">
           <span dir="ltr" className="text-[18px] tracking-tight flex items-center select-none drop-shadow-sm">
-            <span className="font-normal">Claylark™</span><span className="font-semibold ml-1.5">SpaceStation</span><span className="ml-2 text-[10px] font-bold bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30">3.0</span>
+            <span className="font-normal">{APP_CONFIG.meta.appNameShort}</span><span className="font-semibold ml-1.5">{APP_CONFIG.meta.stationName}</span><span className="ml-2 text-[10px] font-bold bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30">{APP_CONFIG.meta.version}</span>
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <button onClick={toggleDarkMode} title={isDark ? '浅色模式' : '深色模式'} className={`w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-sm border ${isBgDark ? 'bg-[#1a1a1a]/80 text-white border-[#333]' : 'bg-white/80 text-gray-700 border-gray-200/50'}`}>
+          <button onClick={() => dispatch({ type: 'TOGGLE_DARK' })} title={isDark ? '浅色模式' : '深色模式'} className={`w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-sm border ${isBgDark ? 'bg-[#1a1a1a]/80 text-white border-[#333]' : 'bg-white/80 text-gray-700 border-gray-200/50'}`}>
             <Icon name={isDark ? "light_mode" : "dark_mode"} className="text-[18px]" />
           </button>
           <button onClick={() => setIsSettingsOpen(true)} title={t.settings.title} className={`w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-sm border ${isBgDark ? 'bg-[#1a1a1a]/80 text-white border-[#333]' : 'bg-white/80 text-gray-700 border-gray-200/50'}`}>
@@ -106,7 +102,7 @@ export default function Header({
               {isLangOpen && (
                 <div className={`w-full mt-2 border rounded-[20px] shadow-xl overflow-hidden flex flex-col p-1.5 animate-fade-in-up backdrop-blur-xl saturate-[180%] ${isBgDark ? 'bg-white/[0.08] border-white/[0.15]' : 'bg-black/[0.03] border-black/[0.08]'}`}>
                   {langOptions.map(o => (
-                    <button key={o.id} onClick={() => { onLocaleChange(o.id); setIsLangOpen(false); }} title={o.label} className={`px-3 py-2.5 text-[12px] font-bold text-left rounded-[14px] transition-all ${locale === o.id ? 'bg-blue-600 text-white shadow-sm' : (isBgDark ? 'text-gray-200 hover:bg-white/10' : 'text-gray-800 hover:bg-black/5')}`}>{o.label}</button>
+                    <button key={o.id} onClick={() => { dispatch({ type: 'SET_LOCALE', payload: o.id }); setIsLangOpen(false); }} title={o.label} className={`px-3 py-2.5 text-[12px] font-bold text-left rounded-[14px] transition-all ${locale === o.id ? 'bg-blue-600 text-white shadow-sm' : (isBgDark ? 'text-gray-200 hover:bg-white/10' : 'text-gray-800 hover:bg-black/5')}`}>{o.label}</button>
                   ))}
                 </div>
               )}
@@ -119,7 +115,7 @@ export default function Header({
               {themePresetList.map((p) => {
                 const isSelected = currentThemeId === p.id && !useCustomBg;
                 return (
-                  <div key={p.id} onClick={() => { setUseCustomBg(false); setCurrentThemeId(p.id); if (p.id === 'solid') setIsGlassUI(false); else setIsGlassUI(true); }} title={p.label} className="flex flex-col items-center cursor-pointer group w-full">
+                  <div key={p.id} onClick={() => { setUseCustomBg(false); dispatch({ type: 'SET_THEME', payload: p.id }); }} title={p.label} className="flex flex-col items-center cursor-pointer group w-full">
                     <div className={`w-full aspect-[4/3] rounded-[14px] p-1.5 flex flex-col justify-between relative overflow-hidden border transition-all shadow-sm group-hover:scale-[1.02] ${p.style} ${isSelected ? 'ring-2 ring-blue-500 border-transparent' : (isBgDark ? 'border-white/10' : 'border-black/5')}`}>
                       <div className={`w-full h-1 rounded-full opacity-30 ${isBgDark ? 'bg-white' : 'bg-black'}`}></div>
                       <div className={`w-3/5 h-1/2 rounded-md mx-auto flex items-center justify-center ${p.previewCard}`}><div className="w-8 h-0.5 rounded-full bg-current opacity-20"></div></div>
@@ -138,7 +134,7 @@ export default function Header({
           <div className="mb-5">
             <div className={`flex items-center justify-between pl-5 pr-4 h-11 rounded-full border shadow-sm ${isBgDark ? 'bg-white/5 border-white/5 text-white' : 'bg-black/5 border-transparent text-gray-900'}`}>
               <span className="text-[12px] font-bold flex items-center gap-1.5 select-none opacity-90"><Icon name="blur_on" className="text-[16px] text-blue-500" /> {t.settings.forceGlass}</span>
-              <button onClick={() => setIsGlassUI(!isGlassUI)} title={t.settings.forceGlass} className={`w-11 h-6 rounded-full p-1 transition-colors relative flex items-center shadow-inner ${isGlassUI ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-700'}`}>
+              <button onClick={() => dispatch({ type: 'TOGGLE_GLASS' })} title={t.settings.forceGlass} className={`w-11 h-6 rounded-full p-1 transition-colors relative flex items-center shadow-inner ${isGlassUI ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-700'}`}>
                 <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform ${isGlassUI ? 'translate-x-5' : 'translate-x-0'}`}></div>
               </button>
             </div>

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import type { ChatMessage, AIModel } from '../types/config';
+import type { ChatMessage, AIModel, LocaleCode } from '../types/config';
 import { streamDeepSeek } from '../services/chatApi';
 
 export function useChatStream() {
@@ -12,7 +12,7 @@ export function useChatStream() {
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
 
-  const sendMessage = useCallback(async (content: string, model: AIModel, isDeepThink: boolean) => {
+  const sendMessage = useCallback(async (content: string, model: AIModel, isDeepThink: boolean, locale: LocaleCode, currentTrackInfo?: string) => {
     if (!content.trim()) return;
 
     const userMsg: ChatMessage = { role: 'user', text: content };
@@ -53,6 +53,8 @@ export function useChatStream() {
         model,
         [...prevMessages, userMsg],
         isDeepThink,
+        currentTrackInfo || '',
+        locale,
         (token, type) => {
           if (type === 'reasoning') {
             updateReasoning(t => t + token);

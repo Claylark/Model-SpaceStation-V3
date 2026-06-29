@@ -1,16 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { APP_CONFIG, themePresets } from './config/index';
 import { mergeCardConfig } from './config/merge';
-import { useHorizontalScrollSpy } from './hooks/useHorizontalScrollSpy';
 import { useTheme } from './hooks/useTheme';
-import { useRouteTheme } from './hooks/useRouteTheme';
 import { usePlaylist } from './hooks/usePlaylist';
-import { useChatStream } from './hooks/useChatStream';
-import { setLocale as applyLocale } from './i18n/index';
-import type { LocaleCode } from './types/config';
-import RichTextIntro from './registry/components/RichTextIntro';
-import ElasticSpace from './registry/components/ElasticSpace';
-import PlaceholderCard from './registry/components/PlaceholderCard';
+import { useRouteTheme } from './hooks/useRouteTheme';
+import { AppProvider, useAppContext } from './context/AppContext';
+import componentRegistry from './config/_base/componentRegistry';
+import type { LocaleCode, AIModel } from './types/config';
+import CardErrorBoundary from './components/CardErrorBoundary';
 import Header from './components/Header';
 import AIChatModule from './components/AIChatModule';
 import BottomFloatingPill from './components/BottomFloatingPill';
@@ -23,52 +20,19 @@ const ABSOLUTE_FALLBACK_GLASS =
 const SOLID_MATERIAL =
   'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] shadow-[0_12px_30px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_30px_rgba(0,0,0,0.4)] text-gray-900 dark:text-white';
 
-export default function App() {
-  const { theme: routeTheme, locale: routeLocale } = useRouteTheme();
-
-  const {
-    isDark, setIsDark, isGlassUI, setIsGlassUI,
-    useCustomBg, setUseCustomBg, customBgUrl, setCustomBgUrl,
-    customBgType, setCustomBgType, currentThemeId, setCurrentThemeId,
-    isBgDark, setIsBgDark, toggleDarkMode,
-  } = useTheme();
-
-  const [locale, setLocale] = useState<LocaleCode>(routeLocale);
-
-  const handleLocaleChange = useCallback((newLocale: LocaleCode) => {
-    setLocale(newLocale);
-    applyLocale(newLocale);
-  }, []);
-
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const { isPlaying, setIsPlaying: _setIsPlaying, togglePlay, next, prev, currentTrack, audioRef } = usePlaylist();
-  const { messages, isStreaming, sendMessage } = useChatStream();
-  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
-
+function AppShell() {
+  const { state, dispatch, sendMessage } = useAppContext();
+  const { locale, currentThemeId, isDark, isGlassUI, isChatOpen, activeSectionId } = state;
+  const { useCustomBg, setUseCustomBg, customBgUrl, setCustomBgUrl, customBgType, setCustomBgType, isBgDark, setIsBgDark } = useTheme();
+  const { audioRef } = usePlaylist();
+  const { theme: routeTheme } = useRouteTheme();
   const scrollLockRef = useRef(false);
 
   useEffect(() => {
     if (routeTheme && routeTheme !== currentThemeId) {
-      setCurrentThemeId(routeTheme);
-      if (routeTheme === 'solid') setIsGlassUI(false);
-      else setIsGlassUI(true);
+      dispatch({ type: 'SET_THEME', payload: routeTheme });
     }
-  }, [routeTheme]);
-
-  useEffect(() => {
-    if (routeLocale) {
-      setLocale(routeLocale);
-      applyLocale(routeLocale);
-    }
-  }, [routeLocale]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'dark') {
-      document.documentElement.classList.add('dark');
-      setIsDark(true);
-    }
-  }, []);
+  }, [routeTheme, currentThemeId, dispatch]);
 
   const handleBgLuminanceCheck = useCallback(() => {
     setTimeout(() => {
@@ -98,26 +62,6 @@ export default function App() {
   }, [isDark, useCustomBg, customBgUrl, currentThemeId]);
 
   useEffect(() => { handleBgLuminanceCheck(); }, [handleBgLuminanceCheck]);
-
-  const dispatchAction = useCallback((action: { type: string; payload: string }) => {
-    switch (action.type) {
-      case 'NAVIGATE':
-      case 'NAVIGATE_SECTION': {
-        const firstStack = APP_CONFIG.stacks.find(s => s.sectionId === action.payload);
-        if (firstStack) {
-          const el = document.getElementById(firstStack.id);
-          const container = document.getElementById('main-scroll-container');
-          if (el && container) {
-            container.style.scrollSnapType = 'none';
-            const targetLeft = el.offsetLeft - (container.clientWidth / 2) + (el.clientWidth / 2);
-            container.scrollTo({ left: targetLeft, behavior: 'smooth' });
-            setTimeout(() => { container.style.scrollSnapType = ''; }, 600);
-          }
-        }
-        break;
-      }
-    }
-  }, []);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
@@ -168,8 +112,6 @@ export default function App() {
     sessionStorage.setItem('A11Y_DATA', JSON.stringify(a11yData));
   }, [locale]);
 
-  const { activeSectionId, activeStackIndex } = useHorizontalScrollSpy(APP_CONFIG.stacks, 'main-scroll-container');
-
   const resolveCardConfig = useCallback((baseCard: CardConfig, themeId: string): CardConfig => {
     if (!baseCard.themeOverrides || !baseCard.themeOverrides[themeId]) return baseCard;
     return mergeCardConfig(baseCard, baseCard.themeOverrides[themeId]);
@@ -208,18 +150,24 @@ export default function App() {
     }
 
     const componentName = card.body.component;
+    const entry = componentRegistry[componentName];
+    const CardComponent = entry?.component;
 
     return (
       <div key={card.id}
         className={`${card.layout.width} ${card.layout.height} relative box-border`}>
         <div className={`w-full h-full rounded-[32px] flex flex-col relative overflow-hidden transition-all duration-300 transform-gpu ${finalBgStyle} ${card.visual.font || 'font-sans'}`}>
-          {componentName === 'RichTextIntro' && <RichTextIntro props={card.body.props} actions={card.actions} dispatch={dispatchAction} />}
-          {componentName === 'ElasticSpace' && <ElasticSpace props={card.body.props} />}
-          {componentName === 'PlaceholderCard' && <PlaceholderCard props={card.body.props} />}
+          <CardErrorBoundary cardId={card.id}>
+            {CardComponent ? (
+              <CardComponent props={card.body.props} actions={card.actions} dispatch={dispatch} />
+            ) : (
+              <div className="p-4 text-[12px] text-gray-400 italic">Unknown component: {componentName}</div>
+            )}
+          </CardErrorBoundary>
         </div>
       </div>
     );
-  }, [currentThemeId, isGlassUI, resolveCardConfig, dispatchAction]);
+  }, [currentThemeId, isGlassUI, resolveCardConfig, dispatch]);
 
   const renderStackPlaceholder = useCallback((stack: CardStackConfig) => (
     <section id={stack.id} key={stack.id}
@@ -287,24 +235,19 @@ export default function App() {
       </div>
 
       <Header
-        isGlassUI={isGlassUI} setIsGlassUI={setIsGlassUI}
         useCustomBg={useCustomBg} setUseCustomBg={setUseCustomBg}
         customBgUrl={customBgUrl} setCustomBgUrl={setCustomBgUrl}
         customBgType={customBgType} setCustomBgType={setCustomBgType}
-        isBgDark={isBgDark} currentThemeId={currentThemeId} setCurrentThemeId={setCurrentThemeId}
-        isDark={isDark} toggleDarkMode={toggleDarkMode}
-        locale={locale} onLocaleChange={handleLocaleChange}
+        isBgDark={isBgDark}
       />
 
-      <AIChatModule isChatOpen={isChatOpen} isGlassUI={isGlassUI}
-        messages={messages} isStreaming={isStreaming}
-        sendMessage={sendMessage} locale={locale}
-      />
+      <AIChatModule />
 
       <main id="main-scroll-container" onWheel={handleWheel}
         className={`fixed top-0 bottom-0 left-0 w-full flex flex-row items-end overflow-x-auto snap-x snap-mandatory scroll-smooth hide-scrollbar mask-image-top pb-[112px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isChatOpen ? 'opacity-0 -z-10 scale-95 blur-md pointer-events-none' : 'opacity-100 z-40 scale-100 blur-0 pointer-events-auto'}`}>
         <div className="shrink-0" style={{ width: 'calc(50vw - min(186px, 47vw))' }}></div>
         {APP_CONFIG.stacks.map((stack, idx) => {
+          const activeStackIndex = APP_CONFIG.stacks.findIndex(s => s.sectionId === activeSectionId);
           const isInViewport = Math.abs(idx - activeStackIndex) <= 2;
           return (
             <div key={stack.id} className="contents">
@@ -316,16 +259,16 @@ export default function App() {
         <div className="shrink-0" style={{ width: 'calc(50vw - min(186px, 47vw))' }}></div>
       </main>
 
-      <BottomFloatingPill
-        activeId={activeSectionId} isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen}
-        isPlaying={isPlaying} isGlassUI={isGlassUI} dispatch={dispatchAction}
-        currentThemeId={currentThemeId}
-        isPlayerOpen={isPlayerOpen} setIsPlayerOpen={setIsPlayerOpen}
-        togglePlay={togglePlay} next={next} prev={prev}
-        currentTrack={currentTrack} audioRef={audioRef}
-        locale={locale}
-      />
+      <BottomFloatingPill audioRef={audioRef} />
     </div>
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <AppProvider stacks={APP_CONFIG.stacks} containerId="main-scroll-container">
+      <AppShell />
+    </AppProvider>
   );
 }

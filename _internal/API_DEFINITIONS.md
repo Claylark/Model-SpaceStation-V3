@@ -1,19 +1,21 @@
-# 📚 Model SpaceStation V3 — 内部 API 参考
+# Model SpaceStation v3.0.1 — 内部 API 参考
 
-> 所有自定义类型、函数、Hook、组件、工具函数的完整文档
+> 类型系统、Hooks、Context、组件、Registry、服务层的完整文档
 
 ---
 
 ## 目录
 
 1. [类型系统](#1-类型系统)
-2. [配置合并引擎](#2-配置合并引擎)
-3. [i18n 多语言系统](#3-i18n-多语言系统)
-4. [Hooks](#4-hooks)
-5. [UI 组件](#5-ui-组件)
-6. [卡片组件（Registry）](#6-卡片组件registry)
-7. [App.tsx 内部函数与常量](#7-apptsx-内部函数与常量)
-8. [CSS 工具类](#8-css-工具类)
+2. [AppContext 全局事件总线](#2-appcontext-全局事件总线)
+3. [配置合并引擎](#3-配置合并引擎)
+4. [i18n 多语言系统](#4-i18n-多语言系统)
+5. [Hooks](#5-hooks)
+6. [UI 组件](#6-ui-组件)
+7. [卡片组件（Registry）](#7-卡片组件registry)
+8. [App.tsx 内部函数与常量](#8-apptsx-内部函数与常量)
+9. [服务层](#9-服务层)
+10. [CSS 工具类](#10-css-工具类)
 
 ---
 
@@ -21,40 +23,19 @@
 
 **文件：** `src/types/config.ts`
 
-### CardLayout
-
-卡片尺寸配置。
+### CardConfig
 
 ```ts
-interface CardLayout {
-  width: string;   // Tailwind 宽度类，如 "w-full", "w-1/2", "w-[372px]"
-  height: string;  // Tailwind 高度类，如 "h-auto", "h-48", "h-64"
-}
-```
-
-### GlassMode
-
-卡片玻璃效果模式。
-
-```ts
-type GlassMode = 'default' | 'force-glass' | 'force-solid';
-```
-
-| 值 | 行为 |
-|---|---|
-| `'default'` | 跟随全局 `isGlassUI` 开关 |
-| `'force-glass'` | 始终毛玻璃，忽略全局开关 |
-| `'force-solid'` | 始终实色，忽略全局开关 |
-
-### CardVisual
-
-卡片视觉样式配置。
-
-```ts
-interface CardVisual {
-  glassMode?: GlassMode;  // 默认 'default'
-  font?: string;          // Tailwind 字体类，如 "font-sans"
-  bg?: string;            // 自定义背景 Tailwind 类
+interface CardConfig {
+  id: string;
+  sectionId: string;
+  visible: boolean;
+  layout: CardLayout;       // { width, height }
+  visual: CardVisual;       // { glassMode?, font?, bg? }
+  body: CardBody;
+  actions?: CardAction[];
+  themeOverrides?: Record<string, DeepPartial<CardConfig>>;
+  version?: string;          // v3.0.1: Schema 版本迁移预留
 }
 ```
 
@@ -64,122 +45,208 @@ interface CardVisual {
 
 ```ts
 interface CardAction {
-  label: string;         // 按钮文字
-  primary: boolean;      // true=主按钮样式, false=次要
+  label: string;
+  primary: boolean;
   action: {
-    type: string;        // 动作类型，如 "NAVIGATE", "NAVIGATE_SECTION"
-    payload: string;     // 动作参数，如 sectionId
+    type: string;
+    payload: string;
   };
-}
-```
-
-### CardBody
-
-卡片内容体——驱动渲染的核心配置。
-
-```ts
-interface CardBody {
-  component: string;     // 注册的 React 组件名（在 App.tsx renderCard 中匹配）
-  props: ComponentProps; // 传给组件的任意键值参数
-}
-
-type ComponentProps = Record<string, unknown>;
-```
-
-### CardConfig
-
-单张卡片完整配置。
-
-```ts
-interface CardConfig {
-  id: string;           // 唯一 DOM id
-  sectionId: string;    // 所属导航 Section
-  visible: boolean;     // false = 占位不渲染内容
-  layout: CardLayout;
-  visual: CardVisual;
-  body: CardBody;
-  actions?: CardAction[];
-  themeOverrides?: Record<string, DeepPartial<CardConfig>>;
 }
 ```
 
 ### CardStackConfig
 
-卡片堆配置——横向滚动的 snap 单元。
-
 ```ts
 interface CardStackConfig {
-  id: string;              // 堆 DOM id（导航/scroll spy 目标）
-  sectionId: string;       // 绑定 Section
+  id: string;
+  sectionId: string;
   visible: boolean;
-  stackWidth: string;      // 如 "w-[380px]"
-  stackMaxWidth?: string;  // 如 "max-w-[380px]"
-  gap?: string;            // 堆内卡片间距，如 "gap-3"
-  cards: CardConfig[];     // 堆内卡片列表
+  stackWidth: string;        // 如 "w-[372px]"
+  stackMaxWidth?: string;    // 如 "max-w-[94vw]"
+  gap?: string;
+  cards: CardConfig[];
   themeOverrides?: Record<string, DeepPartial<CardStackConfig>>;
 }
 ```
 
-### AppConfig
+### ComponentRegistry
 
-应用顶层配置——所有内容的入口。
+**v3.0.1 升级：** 从 `Record<string, React.ComponentType<any>>` 升级为带 schema 的结构。
 
 ```ts
-interface AppConfig {
-  meta: AppMeta;              // { version: string; appName: string }
-  themeSystem: ThemeSystem;   // { defaultTheme: string; presets: Record<string, ThemePreset> }
-  sections: Section[];        // 导航区块定义
-  stacks: CardStackConfig[];  // 卡片堆数组
+interface RegistryEntry {
+  component: React.ComponentType<any>;
+  schema: PropSchema;
+}
+
+type ComponentRegistry = Record<string, RegistryEntry>;
+```
+
+### PropSchema
+
+物料描述协议，可视化编辑器根据此 schema 自动生成属性配置面板。
+
+```ts
+interface PropSchema {
+  [key: string]: {
+    type: 'string' | 'number' | 'boolean' | 'image' | 'select' | 'color' | 'text';
+    label: string;
+    default?: unknown;
+    options?: string[];  // type='select' 时的下拉选项
+  };
 }
 ```
 
-### ThemePreset
+### AppAction
 
-主题预设定义。
+全局事件总线统一 Action 类型。
 
 ```ts
-interface ThemePreset {
-  id: string;                  // 主题 ID（space/crystal/solid/aurora）
-  label: string;               // 显示名称
-  style: string;               // 背景 Tailwind 类
-  isDark?: boolean;
-  adaptiveLuminance?: boolean; // 是否根据暗黑模式自适应亮度
-  previewCard: string;
-  wallpaper: WallpaperConfig;
-  ui: ThemeUIStyles;           // { header, pill, cardDefault }
-  domain: string;              // 三级域名前缀
+type AppAction =
+  | { type: 'NAVIGATE_SECTION'; payload: string }
+  | { type: 'TOGGLE_PLAY' }
+  | { type: 'NEXT_TRACK' }
+  | { type: 'PREV_TRACK' }
+  | { type: 'TOGGLE_CHAT' }
+  | { type: 'TOGGLE_PLAYER' }
+  | { type: 'SET_THEME'; payload: string }
+  | { type: 'SET_LOCALE'; payload: LocaleCode }
+  | { type: 'TOGGLE_DARK' }
+  | { type: 'TOGGLE_GLASS' };
+```
+
+### ACTION_CATALOG
+
+可枚举的动作资产表。可视化编辑器的事件绑定面板可遍历此表生成下拉菜单。
+
+```ts
+const ACTION_CATALOG: Record<string, ActionMeta> = {
+  NAVIGATE_SECTION: { label: '跳转版块', needsPayload: true, payloadHint: 'sectionId' },
+  TOGGLE_PLAY:      { label: '播放/暂停', needsPayload: false },
+  NEXT_TRACK:       { label: '下一首', needsPayload: false },
+  PREV_TRACK:       { label: '上一首', needsPayload: false },
+  TOGGLE_CHAT:      { label: '打开/关闭 AI 对话', needsPayload: false },
+  TOGGLE_PLAYER:    { label: '打开/关闭 播放器', needsPayload: false },
+  SET_THEME:        { label: '切换主题', needsPayload: true, payloadHint: 'themeId' },
+  SET_LOCALE:       { label: '切换语言', needsPayload: true, payloadHint: 'localeCode' },
+  TOGGLE_DARK:      { label: '切换暗黑模式', needsPayload: false },
+  TOGGLE_GLASS:     { label: '切换毛玻璃', needsPayload: false },
+};
+```
+
+### AppContextValue
+
+```ts
+interface AppContextValue {
+  state: AppContextState;
+  dispatch: (action: AppAction) => void;
+  sendMessage: (content: string, model: AIModel, isDeepThink: boolean) => void;
+  updateCardProps: (cardId: string, key: string, value: unknown) => void;
+  moveCard: (cardId: string, sourceStackId: string, targetStackId: string, targetIndex: number) => void;
+  deleteCard: (cardId: string) => void;
 }
 ```
 
-### Section
-
-导航区块定义。
+### AppContextState
 
 ```ts
-interface Section {
-  id: string;    // Section ID（hero/profile/attributes/network/history）
-  label: string; // 显示名称
+interface AppContextState {
+  locale: LocaleCode;
+  currentThemeId: string;
+  isDark: boolean;
+  isGlassUI: boolean;
+  isChatOpen: boolean;
+  isPlayerOpen: boolean;
+  isPlaying: boolean;
+  currentTrack: Track | null;
+  messages: ChatMessage[];
+  isStreaming: boolean;
+  activeSectionId: string;
+  isDesignMode: boolean;   // v3.0.1: 设计态/运行态隔离标志
 }
 ```
 
-### LocaleCode / LocaleStrings
+### ChatMessage
 
 ```ts
-type LocaleCode = 'zh-CN' | 'zh-TW' | 'zh-HK' | 'en-US' | 'fr-FR' | 'ru-RU' | 'es-ES' | 'ar-SA';
+interface ChatMessage {
+  role: 'user' | 'ai';
+  text: string;
+  reasoning?: string;  // DeepSeek V4 思维链
+}
+```
 
-interface LocaleStrings {
-  header: { title: string };
-  nav: Record<string, string>;
-  settings: { /* 设置面板所有文案 */ };
-  chat: { /* AI 对话文案 */ };
-  player: { /* 音乐播放器文案 */ };
-  cards: Record<string, Record<string, string>>;
+### AIModel
+
+```ts
+type AIModel = 'DeepSeek Flash' | 'DeepSeek Pro';
+```
+
+### ChatStreamRequest / ChatStreamCallbacks
+
+```ts
+interface ChatStreamRequest {
+  model: AIModel;
+  messages: ChatMessage[];
+}
+
+interface ChatStreamCallbacks {
+  onToken: (token: string, type: 'content' | 'reasoning') => void;
+  onComplete: () => void;
+  onError: (error: Error) => void;
 }
 ```
 
 ---
 
-## 2. 配置合并引擎
+## 2. AppContext 全局事件总线
+
+**文件：** `src/context/AppContext.tsx`
+
+### AppProvider
+
+包裹整个应用，聚合 useTheme + usePlaylist + useChatStream + useHorizontalScrollSpy 的全部状态。
+
+```tsx
+<AppProvider stacks={APP_CONFIG.stacks} containerId="main-scroll-container">
+  <AppShell />
+</AppProvider>
+```
+
+### useAppContext()
+
+任何组件（包括卡片）调用此 Hook 获取全局上下文。
+
+```ts
+const { state, dispatch, sendMessage, updateCardProps, moveCard, deleteCard } = useAppContext();
+```
+
+### dispatch(action: AppAction)
+
+全局事件分发。所有组件通过 dispatch 通信，不直接持有具体逻辑。
+
+### updateCardProps / moveCard / deleteCard
+
+原子化数据突变函数，用于可视化编辑器实时修改配置树。
+
+```ts
+updateCardProps('card-hero-1', 'title', '新标题');
+moveCard('card-1', 'stack-hero', 'stack-profile', 0);
+deleteCard('card-1');
+```
+
+### 组件 Props 精简对比
+
+| 组件 | v3.0 Props 数 | v3.0.1 Props 数 |
+|------|---------------|-----------------|
+| BottomFloatingPill | 15 | 1 (仅 audioRef) |
+| AIChatModule | 6 | 0 |
+| Header | 14 | 8 (仅背景相关) |
+| App.tsx | 直接管理所有 hooks | 通过 Provider 包裹 |
+
+---
+
+## 3. 配置合并引擎
 
 **文件：** `src/config/merge.ts`
 
@@ -187,217 +254,59 @@ interface LocaleStrings {
 
 深度合并卡片配置。优先级：`force > themeOverride > base`。
 
-```ts
-function mergeCardConfig(
-  base: CardConfig,
-  themeOverride?: DeepPartial<CardConfig>,
-  forceOverride?: DeepPartial<CardConfig>,
-): CardConfig
-```
-
 ### mergeStackConfig(base, themeOverride?)
 
-深度合并卡片堆配置。合并堆级属性后，再按 `id` 逐个匹配并合并堆内卡片。
+深度合并卡片堆配置。合并堆级属性后，再按 `id` 逐个匹配合并堆内卡片。
 
-```ts
-function mergeStackConfig(
-  base: CardStackConfig,
-  themeOverride?: DeepPartial<CardStackConfig>,
-): CardStackConfig
-```
+### deepClone(obj) / deepMerge(target, source)
 
-### deepClone(obj)
-
-JSON 深拷贝。
-
-```ts
-function deepClone<T>(obj: T): T
-```
-
-### deepMerge(target, source)
-
-深度合并两个对象。数组元素若含 `id` 则按 id 深度合并（单张卡片微调无需重写整个数组），无 `id` 则整体替换。
-
-```ts
-function deepMerge(
-  target: Record<string, unknown>,
-  source: Record<string, unknown>,
-): Record<string, unknown>
-```
-
-### isObject(value)
-
-类型守卫：判断值是否为非数组的普通对象。
-
-```ts
-function isObject(value: unknown): value is Record<string, unknown>
-```
+JSON 深拷贝和深度合并。数组元素若含 `id` 则按 id 深度合并，无 `id` 则整体替换。
 
 ---
 
-## 3. i18n 多语言系统
+## 4. i18n 多语言系统
 
 **入口文件：** `src/i18n/index.ts`
-**RTL 工具：** `src/i18n/rtl.ts`
 
-### setLocale(locale)
+支持 `zh-CN` / `zh-TW` / `zh-HK` / `en-US` / `fr-FR` / `ru-RU` / `es-ES` / `ar-SA` 八种语言。
 
-切换当前语言。同时设置 `currentLocale` 状态和文档级 HTML 属性（`lang` + `dir`）。
-
-```ts
-function setLocale(locale: LocaleCode): void
-```
-
-### setDocumentLocale(locale)
-
-仅设置文档级 HTML 属性（`document.documentElement.lang` + `document.documentElement.dir`）。不改变 `currentLocale` 状态，用于初始化。
-
-```ts
-function setDocumentLocale(locale: LocaleCode): void
-```
-
-### getLocale()
-
-获取当前语言代码。
-
-```ts
-function getLocale(): LocaleCode
-```
-
-### t(key, fallback?)
-
-按点号分隔的路径查找翻译文案。
-
-```ts
-function t(key: string, fallback?: string): string
-
-// 用法
-t('header.title')                // → "星壤空间站 Settings"
-t('nav.hero')                    // → "自我介绍"
-t('setting.nonexistent', '???')  // → "???"
-```
-
-### isRTL(locale)
-
-判断指定语言是否为从右到左书写方向。
-
-```ts
-function isRTL(locale: string): boolean
-```
-
-### getDir(locale)
-
-获取指定语言的文本方向：`'ltr'` 或 `'rtl'`。
-
-```ts
-function getDir(locale: string): 'ltr' | 'rtl'
-```
-
-### locales
-
-当前语言的所有翻译字符串（`LocaleStrings` 对象）。
-
-```ts
-const locales: Record<LocaleCode, LocaleStrings>
-```
-
-### RTL_LOCALES
-
-RTL 语言列表（可扩展）。
-
-```ts
-const RTL_LOCALES: string[] = ['ar-SA'];
-```
+- `setLocale(locale)` — 切换语言，同时设置 `document.documentElement.lang` 和 `dir`
+- `isRTL(locale)` — 判断是否为 RTL 语言
+- `locales[locale]` — 当前语言的翻译字符串
 
 ---
 
-## 4. Hooks
+## 5. Hooks
 
 ### useHorizontalScrollSpy(stacks, containerId)
 
-**文件：** `src/hooks/useHorizontalScrollSpy.ts`
-
-监听横向滚动的 scroll 事件，通过计算视口中心到各堆 DOM 节点的距离，确定当前激活的堆。
-
-```ts
-function useHorizontalScrollSpy(
-  stacks: CardStackConfig[],
-  containerId: string,
-): {
-  activeSectionId: string;   // 当前堆的 sectionId（用于底部导航高亮）
-  activeStackIndex: number;  // 当前堆在 stacks 数组中的索引（用于惰性渲染）
-}
-```
-
-**实现细节：**
-- 滚动事件通过 `setTimeout(fn, 50)` 防抖
-- 使用 `Reflect` 比较视口中心到各堆 `offsetLeft` 的距离
-- `activeStackIndex` 通过 `useMemo` 从 `activeSectionId` 反查（O(n)）
+横向滚动视口检测。返回 `{ activeSectionId, activeStackIndex }`。
 
 ### useTheme()
 
-**文件：** `src/hooks/useTheme.ts`
-
-主题状态管理。管理：
-- `isDark` / `setIsDark` — 暗黑模式
-- `isGlassUI` / `setIsGlassUI` — 毛玻璃开关
-- `useCustomBg` / `setUseCustomBg` — 自定义背景开关
-- `customBgUrl` / `setCustomBgUrl` — 自定义背景 URL
-- `customBgType` / `setCustomBgType` — 自定义背景类型（image/video）
-- `currentThemeId` / `setCurrentThemeId` — 当前主题 ID
-- `isBgDark` / `setIsBgDark` — 背景是否暗色（用于 UI 自适应）
-- `toggleDarkMode()` — 切换暗黑模式
-
-### useRouteTheme()
-
-**文件：** `src/hooks/useRouteTheme.ts`
-
-从 URL 路径/域名解析主题和语言。返回：
-```ts
-{ theme: string | null; locale: LocaleCode }
-```
+主题状态管理。管理 `isDark`、`isGlassUI`、`useCustomBg`、`customBgUrl`、`currentThemeId` 等。
 
 ### usePlaylist()
 
-**文件：** `src/hooks/usePlaylist.ts`
-
-歌单播放管理。返回：
-```ts
-{
-  isPlaying: boolean;
-  setIsPlaying: (v: boolean) => void;
-  togglePlay: () => void;
-  next: () => void;
-  prev: () => void;
-  currentTrack: Track | null;
-  audioRef: React.RefObject<HTMLAudioElement | null>;
-}
-```
+歌单播放管理。返回 `{ isPlaying, togglePlay, next, prev, currentTrack, audioRef }`。
 
 ### useChatStream()
 
-**文件：** `src/hooks/useChatStream.ts`
+AI 聊天流式输出。返回 `{ messages, isStreaming, sendMessage }`。
 
-AI 聊天流式输出。返回：
-```ts
-{
-  messages: ChatMessage[];       // 聊天记录（含 reasoning 思维链字段）
-  setMessages: React.Dispatch<...>;
-  isStreaming: boolean;          // 是否正在流式输出
-  sendMessage: (content: string, model: AIModel, isDeepThink: boolean) => void;
-}
-```
-
-**v3.0 更新：**
-- `sendMessage` 签名改为 `(content, model, isDeepThink)` 三参数
+- `sendMessage(content, model, isDeepThink)` — 发送消息
 - `model` 支持 `'DeepSeek Flash' | 'DeepSeek Pro'`
 - `isDeepThink` 为 true 时启用 `thinking: { type: 'enabled', reasoning_effort: 'high' }`
-- `ChatMessage` 新增 `reasoning?: string` 字段存储 DeepSeek V4 思维链
+- `ChatMessage.reasoning` 存储 DeepSeek V4 思维链
 - 流式回调 `onToken` 接受 `(token, type: 'content' | 'reasoning')` 双类型参数
+
+### useRouteTheme()
+
+从 URL 路径/域名解析主题和语言。返回 `{ theme, locale }`。
 
 ---
 
-## 5. UI 组件
+## 6. UI 组件
 
 ### Header
 
@@ -405,42 +314,27 @@ AI 聊天流式输出。返回：
 
 顶部状态栏 + 设置面板。
 
-**Props：**
+**Props（v3.0.1 精简后）：**
 
 | Prop | 类型 | 说明 |
 |---|---|---|
-| `isGlassUI` | `boolean` | 毛玻璃开关 |
-| `setIsGlassUI` | `(v: boolean) => void` | |
-| `useCustomBg` | `boolean` | 自定义背景开关 |
-| `setUseCustomBg` | `(v: boolean) => void` | |
-| `customBgUrl` | `string` | 自定义背景 URL |
-| `setCustomBgUrl` | `(v: string) => void` | |
-| `customBgType` | `'image' \| 'video'` | 自定义背景类型 |
-| `setCustomBgType` | `(v: 'image' \| 'video') => void` | |
+| `useCustomBg` / `setUseCustomBg` | `boolean` | 自定义背景开关 |
+| `customBgUrl` / `setCustomBgUrl` | `string` | 自定义背景 URL |
+| `customBgType` / `setCustomBgType` | `'image' \| 'video'` | 自定义背景类型 |
 | `isBgDark` | `boolean` | 背景是否暗色 |
-| `currentThemeId` | `string` | 当前主题 ID |
-| `setCurrentThemeId` | `(v: string) => void` | |
-| `isDark` | `boolean` | 暗黑模式 |
-| `toggleDarkMode` | `() => void` | |
-| `locale` | `LocaleCode` | 当前语言 |
-| `onLocaleChange` | `(locale: LocaleCode) => void` | |
+
+其他状态（`locale`、`currentThemeId`、`isDark`、`isGlassUI`）通过 `useAppContext()` 获取。
+交互（暗黑切换、主题切换、语言切换、毛玻璃开关）通过 `dispatch(AppAction)` 分发。
 
 ### AIChatModule
 
 **文件：** `src/components/AIChatModule.tsx`
 
-AI 对话浮层（毛玻璃面板）。
+AI 对话浮层。
 
-**Props：**
+**Props（v3.0.1）：** **0 个**。全部通过 `useAppContext()` 获取。
 
-| Prop | 类型 | 说明 |
-|---|---|---|
-| `isChatOpen` | `boolean` | 是否展开 |
-| `isGlassUI` | `boolean` | 是否毛玻璃模式 |
-| `messages` | `ChatMessage[]` | 聊天记录 |
-| `isStreaming` | `boolean` | 是否正在流式输出 |
-| `sendMessage` | `(text: string) => void` | |
-| `locale` | `LocaleCode` | |
+**深度思考推理链**（ReasoningBox）：解析 `reasoning_content` 字段，支持步骤摘要、折叠展示、淡入动画。
 
 ### BottomFloatingPill
 
@@ -448,288 +342,161 @@ AI 对话浮层（毛玻璃面板）。
 
 底部浮动导航栏 + 音乐播放器。
 
-**Props：**
+**Props（v3.0.1 精简后）：**
 
 | Prop | 类型 | 说明 |
 |---|---|---|
-| `activeId` | `string` | 当前激活的 sectionId（高亮对应按钮） |
-| `isChatOpen` | `boolean` | |
-| `setIsChatOpen` | `(v: boolean) => void` | |
-| `isPlaying` | `boolean` | |
-| `isGlassUI` | `boolean` | |
-| `dispatch` | `(a: { type: string; payload: string }) => void` | 导航动作分发 |
-| `currentThemeId` | `string` | |
-| `isPlayerOpen` | `boolean` | 播放器面板是否展开 |
-| `setIsPlayerOpen` | `(v: boolean) => void` | |
-| `togglePlay` | `() => void` | |
-| `next` / `prev` | `() => void` | |
-| `currentTrack` | `Track \| null` | |
-| `audioRef` | `React.RefObject<HTMLAudioElement \| null>` | |
-| `locale` | `LocaleCode` | |
+| `audioRef` | `React.RefObject<HTMLAudioElement \| null>` | 音频元素引用 |
 
-**导航按钮生成：** 从 `locales[locale].nav` 的 keys 读取所有 Section，每个 Section 渲染一个 2 行 2 字按钮。
+所有交互通过 `dispatch(AppAction)` 分发：`TOGGLE_CHAT`、`NAVIGATE_SECTION`、`PREV_TRACK`、`TOGGLE_PLAY`、`NEXT_TRACK`、`TOGGLE_PLAYER`。
 
-### Icon
+### CardErrorBoundary
 
-**文件：** `src/components/Icon.tsx`
+**文件：** `src/components/CardErrorBoundary.tsx`
 
-Material Symbols 图标封装。
+React ErrorBoundary 包裹每张卡片。单卡崩溃时显示降级 UI，不影响全局。
 
-```tsx
-<Icon name="play_arrow" className="text-[18px]" />
-```
+### Icon / SVGIcons
 
-### SVGIcons
-
-**文件：** `src/components/SVGIcons.tsx`
-
-自定义 SVG 图标（星标 `StarSparkle`）。
-
-```tsx
-<SVGIcons.StarSparkle />
-```
+Material Symbols 图标封装和自定义 SVG 图标。
 
 ---
 
-## 6. 卡片组件（Registry）
+## 7. 卡片组件（Registry）
 
-### PlaceholderCard
+**文件：** `src/config/_base/componentRegistry.ts`
 
-**文件：** `src/registry/components/PlaceholderCard.tsx`
+Registry 实际注入组件和物料 Schema。
 
-默认占位卡片组件。显示 Section 标签 + 标题 + 副标题。
+```ts
+const componentRegistry: ComponentRegistry = {
+  RichTextIntro: {
+    component: RichTextIntro,
+    schema: { tag: { type: 'string', label: '标签文字' }, ... },
+  },
+  PlaceholderCard: {
+    component: PlaceholderCard,
+    schema: { title: { type: 'string', label: '标题' }, ... },
+  },
+  ElasticSpace: {
+    component: ElasticSpace,
+    schema: {},
+  },
+};
+```
 
-**Props：**
+- **PlaceholderCard** — 默认占位卡片，sectionId + title + subtitle
+- **RichTextIntro** — 富文本介绍卡片，多行文字 + 头像 + 底部动作按钮
+- **ElasticSpace** — 弹性空间卡片
 
-| Key | 类型 | 说明 |
-|---|---|---|
-| `sectionId` | `string` | Section 标签文字 |
-| `title` | `string` | 卡片标题 |
-| `subtitle` | `string` | 卡片副标题 |
+### 注册新卡片
 
-### RichTextIntro
-
-**文件：** `src/registry/components/RichTextIntro.tsx`
-
-富文本介绍卡片。支持多行文字 + 头像 + 底部动作按钮。
-
-**Props（常用）：**
-
-| Key | 类型 | 说明 |
-|---|---|---|
-| `tag` | `string` | 标签文字 |
-| `lines` | `string[]` | 多行文字内容 |
-| `avatar` | `{ name: string; src: string }` | 头像名 + URL |
-
-### ElasticSpace
-
-**文件：** `src/registry/components/ElasticSpace.tsx`
-
-弹性空间卡片。灵活的内容展示区域。
-
-**Props：** 见组件内类型定义。
+只需在 `componentRegistry` 中追加一条记录，并在 `src/registry/components/` 下添加组件文件。**无需修改 App.tsx。**
 
 ---
 
-## 7. App.tsx 内部函数与常量
+## 8. App.tsx 内部函数与常量
 
 **文件：** `src/App.tsx`
 
-### 液态玻璃常量
+### 结构
 
-```ts
-// 主题驱动的毛玻璃样式
-THEME_DRIVEN_GLASS(ui: { cardDefault: string }): string
-
-// 绝对兜底毛玻璃样式（主题 UI 不可用时）
-ABSOLUTE_FALLBACK_GLASS: string
-
-// 实色材质样式
-SOLID_MATERIAL: string
 ```
-
-### dispatchAction(action)
-
-导航/动作分发器。处理 `NAVIGATE` 和 `NAVIGATE_SECTION` 两种动作类型。
-
-```ts
-function dispatchAction(action: { type: string; payload: string }): void
-```
-
-**行为：**
-1. 在 `APP_CONFIG.stacks` 中查找第一个 `sectionId === payload` 的堆
-2. 通过 `getElementById(stack.id)` 获取堆的 DOM 节点
-3. 计算 targetLeft = `el.offsetLeft - container.clientWidth/2 + el.clientWidth/2`
-4. 暂时关闭 snap，smooth scroll，600ms 后恢复 snap
-
-### handleWheel(e)
-
-滚轮事件处理。垂直滚轮 deltaY → 横向滚动到相邻堆。
-
-```ts
-function handleWheel(e: React.WheelEvent): void
-```
-
-**行为：**
-1. 横向滚轮事件直接跳过（`Math.abs(e.deltaX) > Math.abs(e.deltaY)`）
-2. 计算当前视口中心最近的堆
-3. `deltaY > 15` → 下一个堆；`deltaY < -15` → 上一个堆
-4. smooth scroll，600ms 后解锁 `scrollLockRef`
-
-### resolveCardConfig(baseCard, themeId)
-
-解析卡片的最终配置：base + theme override。
-
-```ts
-function resolveCardConfig(baseCard: CardConfig, themeId: string): CardConfig
+App (Provider 包裹)
+└── AppShell
+    ├── 背景层
+    ├── Header
+    ├── AIChatModule
+    ├── main#main-scroll-container (横向滚动卡片堆)
+    │   ├── spacer
+    │   ├── renderStack / renderStackPlaceholder × N
+    │   └── spacer
+    └── BottomFloatingPill
 ```
 
 ### renderCard(rawCard)
 
-渲染单张卡片（堆内使用）。
-
-```ts
-function renderCard(rawCard: CardConfig): JSX.Element
-```
-
-**行为：**
-1. 调用 `resolveCardConfig` 获取最终配置
-2. 不可见卡片渲染为空占位 div
-3. 根据 `glassMode` + `isGlassUI` 决定毛玻璃/实色样式
-4. 根据 `body.component` 匹配对应卡片组件渲染
+动态从 `componentRegistry` 查找组件并渲染。每张卡片外层包裹 `<CardErrorBoundary>`。
 
 ### renderStack(stack)
 
-渲染完整的卡片堆（包含 flex-wrap 容器 + 所有内部卡片）。
+渲染单个卡片堆，内部 flex-wrap 排列卡片。
 
-```ts
-function renderStack(stack: CardStackConfig): JSX.Element
-```
+### 液态玻璃常量
 
-### renderStackPlaceholder(stack)
+- `THEME_DRIVEN_GLASS(ui)` — 主题驱动毛玻璃
+- `ABSOLUTE_FALLBACK_GLASS` — 绝对兜底毛玻璃
+- `SOLID_MATERIAL` — 实色材质
 
-渲染卡片堆的空占位符。保留 DOM 节点（id + snap-center 尺寸），但不渲染内部内容。用于惰性渲染优化。
+### 卡片堆间距公式
 
-```ts
-function renderStackPlaceholder(stack: CardStackConfig): JSX.Element
-```
-
-### handleBgLuminanceCheck()
-
-背景亮度检测：截取背景图右侧 30% 区域，计算平均亮度，判断背景是否偏暗。用于 Header 图标/文字颜色自适应。
-
-```ts
-function handleBgLuminanceCheck(): void
-```
-
-### useA11yData(locale)
-
-监听 `locale` 变化，将 APP_CONFIG 中所有卡片堆的文字数据写入 sessionStorage，供独立无障碍文字页读取。
-
-**位置：** `src/App.tsx` — `useEffect`（行 154-169）
-
-```ts
-useEffect(() => {
-  const a11yData = {
-    stacks: APP_CONFIG.stacks.map(s => ({
-      id: s.id,
-      sectionId: s.sectionId,
-      cards: s.cards.map(c => ({
-        id: c.id,
-        title: c.body.props?.title || '',
-        subtitle: c.body.props?.subtitle || '',
-        lines: c.body.props?.lines || [],
-        tag: c.body.props?.tag || '',
-      }))
-    })),
-  };
-  sessionStorage.setItem('A11Y_DATA', JSON.stringify(a11yData));
-}, [locale]);
-```
-
-**行为：**
-1. 语言切换时触发重新提取
-2. 遍历所有堆 → 所有卡片，提取 `title`/`subtitle`/`lines`/`tag`
-3. 写入 `sessionStorage['A11Y_DATA']`（关闭标签页自动清除）
-
-### 幽灵锚点（A11Y Skip Link）
-
-**位置：** `src/App.tsx` return 最顶部（行 262-265）
-
-```tsx
-<a href="/a11y.html"
-  className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 ...">
-  跳转到纯文字介绍页
-</a>
-```
-
-**行为：**
-- 默认 `sr-only` 对可视用户完全隐藏
-- Tab 聚焦时显示为固定定位按钮
-- 回车跳转到 `/a11y.html`
-
-### public/a11y.html
-
-**位置：** `public/a11y.html`
-
-独立的纯文字介绍页，无 React、无框架、无任何 UI 组件。
-
-**数据来源：** `sessionStorage.getItem('A11Y_DATA')`（由 `useA11yData()` 写入）
-
-**渲染逻辑：**
-- `h1 + sectionId（h2）→ card title（h3）→ subtitle（p）→ lines（ul）→ tag`
-- 底部"返回主界面"链接回到 `/`
-- 暗色模式自适应（CSS media query）
-
-**砍掉的功能：** Header、AI 对话、音乐播放器、设置面板、背景壁纸、毛玻璃、横向滚动
+spacer 宽度：`calc(50vw - min(186px, 47vw))`，与底部栏 `w-[372px] max-w-[94vw]` 严格对齐。
 
 ---
 
-## 8. CSS 工具类
+## 9. 服务层
+
+### chatApi
+
+**文件：** `src/services/chatApi.ts`
+
+通过本地 `/api/chat` 代理调用 DeepSeek API。使用 `https://api.deepseek.com/chat/completions`（无 /v1）。
+
+### apiClient
+
+**文件：** `src/services/apiClient.ts`
+
+HTTP 客户端基类。
+
+### configApi（预留）
+
+**文件：** `src/services/configApi.ts`
+
+远程配置拉取/保存接口：`fetchAppConfig()` / `saveAppConfig()` / `publishAppConfig()`。
+
+### uploadApi（预留）
+
+**文件：** `src/services/uploadApi.ts`
+
+文件上传接口预留。
+
+### Cloudflare Functions 代理
+
+**文件：** `functions/api/chat.ts`
+
+生产环境 Cloudflare Functions 代理 DeepSeek API。模型映射：`DeepSeek Pro` → `deepseek-v4-pro`，`DeepSeek Flash` → `deepseek-v4-flash`。
+
+### systemPrompt
+
+**文件：** `src/services/systemPrompt.ts`
+
+AI 聊天系统提示词生成器。在每次发送消息时，由 `chatApi.ts` 调用 `buildSystemPrompt()` 动态生成，并随 `POST /api/chat` 的 `systemPrompt` 字段传递给后端代理。
+
+**`buildPageContext()`** — 遍历 `APP_CONFIG.stacks` 提取所有可见卡片的 title/subtitle/lines/tag，生成纯文本页面简介。
+
+**`buildSystemPrompt(currentTrackInfo: string)`** — 生成完整系统提示词，包含：
+- 时间戳（服务端实时）
+- 当前播放歌曲（前端传入）
+- 页面内容简介
+- Role / Persona 定义（从 `APP_CONFIG.meta` 读取 appNameShort、stationName）
+- 约束规则
+
+两个代理端点（`vite.config.ts` 和 `functions/api/chat.ts`）都接收 `systemPrompt` 字符串，作为 messages 数组的第一条 system message 发送给 DeepSeek。
+
+### Vite 本地开发代理
+
+**文件：** `vite.config.ts`
+
+本地开发 `/api/chat` 代理中间件，透传 SSE 流。
+
+---
+
+## 10. CSS 工具类
 
 **文件：** `src/index.css`
 
-### .hide-scrollbar
-
-隐藏滚动条（保留滚动功能）。
-
-```css
-.hide-scrollbar::-webkit-scrollbar { display: none; }
-.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-```
-
-### .mask-image-top
-
-顶部渐变遮罩（从透明到黑色）。使用 `isolation: isolate` 防止 Safari WebKit 将 mask-image 与子元素 `backdrop-filter: blur()` 强行合层导致渲染崩溃。
-
-```css
-.mask-image-top {
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 100%);
-  isolation: isolate;
-}
-```
-
-### .wave-bar + @keyframes musicWave
-
-音乐播放动画——3 条跳动的小竖线。
-
-```css
-@keyframes musicWave {
-  0%, 100% { height: 4px; }
-  50% { height: 14px; }
-}
-.wave-bar { animation: musicWave 1.2s ease-in-out infinite; }
-```
-
-### .animate-fade-in / .animate-fade-in-up
-
-淡入动画 / 淡入上移动画。
-
-### RTL 样式（html[dir="rtl"]）
-
-| 规则 | 作用 |
-|---|---|
-| `html[dir="rtl"] .snap-x { direction: rtl }` | 横向滚动方向翻转 |
-| `html[dir="rtl"] #settings-panel { right: auto; left: 0; ... }` | 设置面板从左侧滑出 |
-| `html[dir="rtl"] #settings-panel.translate-x-full { --tw-translate-x: -100% }` | 关闭动画方向翻转 |
+- `.hide-scrollbar` — 隐藏滚动条
+- `.mask-image-top` — 顶部渐变遮罩
+- `.wave-bar` + `@keyframes musicWave` — 音乐跳动动画
+- `.animate-fade-in` / `.animate-fade-in-up` — 淡入动画
+- `html[dir="rtl"]` — RTL 样式适配（横向滚动翻转、设置面板左出）

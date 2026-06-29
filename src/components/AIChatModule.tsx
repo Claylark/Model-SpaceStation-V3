@@ -1,34 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import Icon from './Icon';
-import type { ChatMessage, AIModel, LocaleCode } from '../types/config';
+import type { ChatMessage, AIModel } from '../types/config';
 import { locales } from '../i18n/index';
-
-interface AIChatModuleProps {
-  isChatOpen: boolean;
-  isGlassUI: boolean;
-  messages: ChatMessage[];
-  isStreaming: boolean;
-  sendMessage: (content: string, model: AIModel, isDeepThink: boolean) => void;
-  locale: LocaleCode;
-}
-
-const THINKING_KEYWORDS: Record<string, Array<{ keys: string[]; status: string }>> = {
-  'zh-CN': [
-    { keys: ['代码', 'bug', '报错', '函数', 'js', 'ts', 'html', 'css'], status: '正在分析代码架构...' },
-    { keys: ['deepseek', 'ds', 'gemini', 'gpt', '模型', 'ai', '思维链'], status: '正在解析模型机制...' },
-    { keys: ['歌', '听', '播放', '音乐', '歌单', 'mp3'], status: '正在检索空间站音频轨...' },
-    { keys: ['主题', '玻璃', '毛玻璃', '样式', '颜色', '视觉'], status: '正在重构液态材质视觉...' },
-  ],
-};
-
-function getDynamicThinkingStatus(prompt: string, locale: string): string {
-  const cleanPrompt = prompt.toLowerCase();
-  const repo = THINKING_KEYWORDS[locale] || THINKING_KEYWORDS['zh-CN'];
-  for (const item of repo) {
-    if (item.keys.some(k => cleanPrompt.includes(k))) return item.status;
-  }
-  return prompt ? `正在思考有关 "${prompt.slice(0, 8)}..." 的内容` : '正在深度推理中...';
-}
+import { useAppContext } from '../context/AppContext';
+import MarkdownRenderer from './MarkdownRenderer';
 
 interface ReasoningStep {
   summary: string;
@@ -38,8 +13,6 @@ interface ReasoningStep {
 interface ReasoningBoxProps {
   reasoning: string;
   isStreaming: boolean;
-  userPrompt: string;
-  locale: string;
 }
 
 function parseReasoningSteps(text: string): ReasoningStep[] {
@@ -65,26 +38,13 @@ function parseReasoningSteps(text: string): ReasoningStep[] {
   return steps;
 }
 
-function ReasoningBox({ reasoning, isStreaming, userPrompt, locale }: ReasoningBoxProps) {
+function ReasoningBox({ reasoning, isStreaming }: ReasoningBoxProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const steps = parseReasoningSteps(reasoning);
-  const lastStep = steps[steps.length - 1];
-  const summaryText = lastStep?.summary || '';
 
-  const summaryKey = summaryText.length > 0
-    ? `summary-${summaryText.length}-${summaryText.slice(0, 8)}`
-    : 'summary-empty';
-
-  if (!reasoning && isStreaming) {
-    const statusText = getDynamicThinkingStatus(userPrompt, locale);
-    return (
-      <div className="mb-2 pl-1 flex items-center gap-2 text-[12px] font-medium text-blue-600 dark:text-blue-400 py-1 select-none animate-pulse">
-        <Icon name="progress_activity" className="text-[14px] animate-spin" />
-        <span>{statusText}</span>
-      </div>
-    );
-  }
   if (!reasoning) return null;
+
+  const statusText = isStreaming ? '正在思考' : '思考完成';
 
   return (
     <div className="w-full mb-2 pl-1 transition-all duration-300">
@@ -93,28 +53,16 @@ function ReasoningBox({ reasoning, isStreaming, userPrompt, locale }: ReasoningB
         className="flex items-center gap-1.5 opacity-70 hover:opacity-100 select-none outline-none text-left py-0.5 text-gray-500 dark:text-gray-400 font-sans text-[11.5px] w-full"
       >
         <Icon name="expand_more" className={`text-[16px] text-gray-400 shrink-0 transition-transform duration-300 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
-        {summaryText ? (
-          <span key={summaryKey} className="font-medium truncate animate-fade-in">{summaryText}</span>
-        ) : (
-          <span className="font-medium truncate text-gray-400 dark:text-gray-500 italic">正在分析...</span>
-        )}
-        {isStreaming && (
-          <span className="text-[10px] text-blue-500 font-normal animate-pulse shrink-0 ml-1">（思考中...）</span>
-        )}
+        <span className={`font-medium ${isStreaming ? 'animate-pulse' : ''}`}>{statusText}</span>
       </button>
       {isExpanded && (
         <div className="max-h-[150px] overflow-y-auto hide-scrollbar mt-2 p-2.5 bg-black/[0.015] dark:bg-white/[0.015] rounded-xl border-l border-gray-300 dark:border-white/10 animate-fade-in pr-0.5">
           {steps.map((step, idx) => (
             <div key={idx}>
-              {step.summary ? (
+              {step.summary && (
                 <div className="font-sans font-bold text-[12px] text-gray-700 dark:text-gray-300 mt-3 mb-1 flex items-center gap-1.5 first:mt-1 select-none">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500/70 shrink-0"></span>
                   <span>{step.summary}</span>
-                </div>
-              ) : (
-                <div className="font-sans font-bold text-[12px] text-gray-500 dark:text-gray-400 mt-3 mb-1 flex items-center gap-1.5 first:mt-1 select-none">
-                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400/50 shrink-0"></span>
-                  <span>思考内容</span>
                 </div>
               )}
               {step.detail && (
@@ -130,7 +78,9 @@ function ReasoningBox({ reasoning, isStreaming, userPrompt, locale }: ReasoningB
   );
 }
 
-export default function AIChatModule({ isChatOpen, isGlassUI, messages, isStreaming, sendMessage, locale }: AIChatModuleProps) {
+export default function AIChatModule() {
+  const { state, sendMessage } = useAppContext();
+  const { isChatOpen, isGlassUI, messages, isStreaming, locale, currentTrack } = state;
   const [input, setInput] = useState('');
   const [model, setModel] = useState<AIModel>('DeepSeek Flash');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -151,19 +101,18 @@ export default function AIChatModule({ isChatOpen, isGlassUI, messages, isStream
 
   const handleSend = () => {
     if (!input.trim() || isStreaming) return;
-    sendMessage(input.trim(), model, isDeepThink);
+    const trackInfo = currentTrack ? `${currentTrack.title} - ${currentTrack.artist}` : '';
+    sendMessage(input.trim(), model, isDeepThink, locale, trackInfo);
     setInput('');
   };
 
   const renderMessage = (m: ChatMessage, idx: number) => (
     <div key={idx} className={`flex w-full mb-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
       <div className={`flex flex-col max-w-[85%] ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-        {m.role === 'ai' && (m.reasoning || (isStreaming && idx === messages.length - 1 && !m.text)) && (
+        {isDeepThink && m.role === 'ai' && (m.reasoning || (isStreaming && idx === messages.length - 1 && !m.text)) && (
           <ReasoningBox
             reasoning={m.reasoning || ''}
             isStreaming={isStreaming && idx === messages.length - 1}
-            userPrompt={messages[idx - 1]?.text || ''}
-            locale={locale}
           />
         )}
         {m.text && (
@@ -175,7 +124,7 @@ export default function AIChatModule({ isChatOpen, isGlassUI, messages, isStream
               : (isGlassUI ? 'bg-white/[0.05] dark:bg-black/[0.2] backdrop-blur-md saturate-[180%] text-gray-800 dark:text-gray-200 border border-white/[0.35] dark:border-white/[0.12] shadow-sm'
                 : 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] text-gray-800 dark:text-gray-200 shadow-sm')
             }`}>
-            <div className="whitespace-pre-wrap">{m.text}</div>
+            <div className="whitespace-pre-wrap"><MarkdownRenderer text={m.text} /></div>
           </div>
         )}
       </div>
@@ -266,5 +215,3 @@ export default function AIChatModule({ isChatOpen, isGlassUI, messages, isStream
     </div>
   );
 }
-
-

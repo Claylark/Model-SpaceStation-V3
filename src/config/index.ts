@@ -27,7 +27,7 @@ function stackBase(sectionId: string, cardId: string, title: string, subtitle: s
 }
 
 export const APP_CONFIG: AppConfig = {
-  meta: { version: '3.0', appName: 'Clay SpaceStation' },
+  meta: { version: '3.0', appName: 'Clay SpaceStation', appNameShort: 'Claylark™', stationName: '星壤空间站' },
   themeSystem: {
     defaultTheme: 'space',
     presets: themePresets,
