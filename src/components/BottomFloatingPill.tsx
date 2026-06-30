@@ -10,13 +10,19 @@ interface BottomFloatingPillProps {
 
 export default function BottomFloatingPill({ audioRef }: BottomFloatingPillProps) {
   const { state, dispatch } = useAppContext();
-  const { activeSectionId, isChatOpen, isPlaying, isGlassUI, currentThemeId, isPlayerOpen, currentTrack, locale } = state;
+  const { activeSectionId, isChatOpen, isPlaying, isGlassUI, currentThemeId, isPlayerOpen, currentTrack, locale, playMode } = state;
   const t = locales[locale];
   const sections = Object.keys(t.nav);
   const themeUI = themePresets[currentThemeId]?.ui;
 
+  const playModeLabels: Record<string, string> = {
+    list: t.player.playModeList,
+    single: t.player.playModeSingle,
+    shuffle: t.player.playModeShuffle,
+  };
+
   return (
-    <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[80] p-[6px] flex items-center justify-between rounded-[32px] w-[372px] max-w-[94vw] h-[64px] box-border transition-all duration-300
+    <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[45] p-[6px] flex items-center justify-between rounded-[32px] w-[372px] max-w-[94vw] h-[64px] box-border transition-all duration-300
       ${isGlassUI
         ? (themeUI?.pill || '') + ' backdrop-blur-2xl shadow-[0_16px_40px_-12px_rgba(0,0,0,0.15)] dark:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.8)]'
         : 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] shadow-[0_10px_25px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.4)]'
@@ -75,6 +81,13 @@ export default function BottomFloatingPill({ audioRef }: BottomFloatingPillProps
             </button>
             <button onClick={() => dispatch({ type: 'NEXT_TRACK' })} title={t.player.next} className="w-[28px] h-[28px] shrink-0 flex items-center justify-center rounded-full bg-white/50 dark:bg-[#222]/60 hover:bg-white dark:hover:bg-[#333] shadow-sm active:scale-95 transition-all text-gray-600 dark:text-gray-300 border border-transparent dark:border-white/5">
               <Icon name="skip_next" className="text-[16px]" />
+            </button>
+            <button
+              onClick={() => dispatch({ type: 'TOGGLE_PLAY_MODE' })}
+              title={playModeLabels[playMode] || playMode}
+              className="w-[28px] h-[28px] shrink-0 flex items-center justify-center rounded-full bg-white/50 dark:bg-[#222]/60 hover:bg-white dark:hover:bg-[#333] shadow-sm active:scale-95 transition-all text-gray-500 dark:text-gray-400 border border-transparent dark:border-white/5"
+            >
+              <Icon name={playMode === 'single' ? 'repeat_one' : playMode === 'shuffle' ? 'shuffle' : 'repeat'} className="text-[14px]" />
             </button>
           </div>
         </div>

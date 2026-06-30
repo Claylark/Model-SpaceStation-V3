@@ -80,6 +80,9 @@ export function AppProvider({ children, stacks, containerId }: AppProviderProps)
       case 'TOGGLE_GLASS':
         theme.setIsGlassUI(prev => !prev);
         break;
+      case 'TOGGLE_PLAY_MODE':
+        playlist.togglePlayMode();
+        break;
     }
   }, [currentStacks, containerId, playlist, theme]);
 
@@ -131,6 +134,7 @@ export function AppProvider({ children, stacks, containerId }: AppProviderProps)
       isPlayerOpen,
       isPlaying: playlist.isPlaying,
       currentTrack: playlist.currentTrack,
+      playMode: playlist.playMode,
       messages: chat.messages,
       isStreaming: chat.isStreaming,
       activeSectionId,

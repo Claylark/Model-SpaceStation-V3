@@ -163,6 +163,8 @@ export interface ChatStreamCallbacks {
   onError: (error: Error) => void;
 }
 
+export type PlayMode = 'list' | 'single' | 'shuffle';
+
 export type AppAction =
   | { type: 'NAVIGATE_SECTION'; payload: string }
   | { type: 'TOGGLE_PLAY' }
@@ -173,7 +175,8 @@ export type AppAction =
   | { type: 'SET_THEME'; payload: string }
   | { type: 'SET_LOCALE'; payload: LocaleCode }
   | { type: 'TOGGLE_DARK' }
-  | { type: 'TOGGLE_GLASS' };
+  | { type: 'TOGGLE_GLASS' }
+  | { type: 'TOGGLE_PLAY_MODE' };
 
 export interface ActionMeta {
   label: string;
@@ -212,10 +215,12 @@ export interface AppContextState {
   isPlayerOpen: boolean;
   isPlaying: boolean;
   currentTrack: Track | null;
+  playMode: PlayMode;
   messages: ChatMessage[];
   isStreaming: boolean;
   activeSectionId: string;
   isDesignMode: boolean;
+  isBgDark: boolean;
 }
 
 export interface LocaleStrings {
@@ -253,6 +258,9 @@ export interface LocaleStrings {
     pause: string;
     close: string;
     open: string;
+    playModeList: string;
+    playModeSingle: string;
+    playModeShuffle: string;
   };
   cards: Record<string, Record<string, string>>;
 }

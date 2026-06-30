@@ -176,6 +176,19 @@ interface ChatMessage {
 }
 ```
 
+### PlayMode
+
+```ts
+type PlayMode = 'list' | 'single' | 'shuffle';
+```
+
+播放模式枚举：
+- `list` — 列表循环（播完自动切下一首）
+- `single` — 单曲循环（无限重播）
+- `shuffle` — 随机播放
+
+通过 `dispatch({ type: 'TOGGLE_PLAY_MODE' })` 切换，`AppContextState.playMode` 读取当前状态。
+
 ### AIModel
 
 ```ts

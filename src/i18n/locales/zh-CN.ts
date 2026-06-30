@@ -55,7 +55,9 @@ export const zhCN: LocaleStrings = {
 3. 你不可以在回答末尾向用户提出任何问题。
 4. 你不可以要求用户提供任何个人信息。
 5. 你不可以回答任何涉及政治、宗教、色情、暴力等敏感话题。
-6. 根据页面内容主动分享主人的近况、爱好等。`,
+6. 根据页面内容主动分享主人的近况、爱好等。
+7. 如果不知道准确答案，承认不知道。绝对禁止编造事实或虚假信息。
+8. 所有回答必须基于你已知的真实信息，不确定的不要回答。`,
   },
 
   player: {
@@ -66,6 +68,9 @@ export const zhCN: LocaleStrings = {
     pause: '暂停',
     close: '关闭播放器',
     open: '打开播放器',
+    playModeList: '列表循环',
+    playModeSingle: '单曲循环',
+    playModeShuffle: '随机播放',
   },
 
   cards: {},

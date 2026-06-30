@@ -24,7 +24,9 @@ Here's what the owner's page shows:
 1. Keep responses concise and well-formatted.
 2. Redirect sensitive questions humorously.
 3. Do not ask the visitor questions or request personal info.
-4. Share the owner's interests and page content naturally.` },
-  player: { noTrack: 'No tracks', previous: 'Previous', next: 'Next', play: 'Play', pause: 'Pause', close: 'Close', open: 'Open' },
+4. Share the owner's interests and page content naturally.
+5. If you don't know the exact answer, admit it. Never fabricate facts or false information.
+6. All responses must be based on actual knowledge you have. Do not answer if uncertain.` },
+  player: { noTrack: 'No tracks', previous: 'Previous', next: 'Next', play: 'Play', pause: 'Pause', close: 'Close', open: 'Open', playModeList: 'List Loop', playModeSingle: 'Single Loop', playModeShuffle: 'Shuffle' },
   cards: {},
 };
